@@ -1,17 +1,22 @@
-<div>
-    <h4 style="margin:0 0 4px"> 出镜IP人物</h4>
+<div class="card" style="margin-top:12px">
+    <h4 style="margin:0 0 8px">👤 出镜IP人物</h4>
     <form method="post" id="ip-form" action="/schedule/ip/new" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:8px">
         <input type="hidden" name="ip_id" id="ip-id" value="">
-        <span style="font-size:11px;color:#999">所属商家</span>
-        <select name="merchant_id" id="ip-mid" style="width:150px" title="该IP属于哪个拍摄商家">{% for m in shooting_merchants %}<option value="{{ m.id }}">{{ m.name }}{% if m.linked_merchant_id %}（分厂）{% endif %}</option>{% endfor %}</select>
-        <input type="text" name="name" id="ip-name" placeholder="IP名称（如：老板、小玲）" style="width:140px" required>
-        <select id="ip-role-select" onchange="var v=this.value;var inp=document.getElementById('ip-role');if(v==='__custom__'){inp.style.display='';inp.value='';inp.focus()}else{inp.style.display='none';inp.value=v}" style="width:130px">
-            <option value="">角色（选填）</option><option>老板</option><option>合伙人</option><option>店长</option><option>主播</option><option>达人</option><option>厨师</option><option>员工</option><option value="__custom__">✏️ 自定义…</option></select>
-        <input type="text" name="role" id="ip-role" placeholder="手动输入角色" style="width:130px;display:none">
-        <input type="number" name="monthly_quota" id="ip-quota" value="25" min="0" style="width:70px" title="0=共享总公司配额">
-        <label style="font-size:11px;display:flex;align-items:center;gap:2px"><input type="checkbox" name="share_parent_quota" id="ip-share" value="1"> 共享总部配额</label>
+        <div class="form-group" style="margin:0"><label style="font-size:11px">所属商家</label>
+        <select name="merchant_id" id="ip-mid" style="width:150px">{% for m in shooting_merchants %}<option value="{{ m.id }}">{{ m.name }}{% if m.linked_merchant_id %}（分厂）{% endif %}</option>{% endfor %}</select></div>
+        <div class="form-group" style="margin:0"><label style="font-size:11px">IP名称</label>
+        <input type="text" name="name" id="ip-name" placeholder="如：老板、小玲" style="width:140px" required></div>
+        <div class="form-group" style="margin:0"><label style="font-size:11px">角色</label>
+        <select id="ip-role-select" onchange="var v=this.value;var inp=document.getElementById('ip-role');if(v==='__custom__'){inp.style.display='';inp.value='';inp.focus()}else{inp.style.display='none';inp.value=v}" style="width:120px">
+            <option value="">选填</option><option>老板</option><option>合伙人</option><option>店长</option><option>主播</option><option>达人</option><option>厨师</option><option>员工</option><option value="__custom__">✏️ 自定义…</option></select>
+        <input type="text" name="role" id="ip-role" placeholder="手动输入" style="width:120px;display:none"></div>
+        <div class="form-group" style="margin:0"><label style="font-size:11px">月配额</label>
+        <input type="number" name="monthly_quota" id="ip-quota" value="25" min="0" style="width:70px"></div>
+        <div class="form-group" style="margin:0"><label style="font-size:11px">&nbsp;</label>
+        <label style="font-size:11px;display:flex;align-items:center;gap:2px;height:30px"><input type="checkbox" name="share_parent_quota" id="ip-share" value="1"> 共享总部</label></div>
+        <div class="form-group" style="margin:0"><label style="font-size:11px">&nbsp;</label>
         <button type="submit" class="btn btn-sm btn-primary" id="ip-btn">+ 添加IP</button>
-        <button type="button" class="btn btn-sm" id="ip-cancel" style="display:none" onclick="cancelEditIP()">取消</button>
+        <button type="button" class="btn btn-sm" id="ip-cancel" style="display:none" onclick="cancelEditIP()">取消</button></div>
     </form>
     {% if all_ips %}
     <div style="max-height:200px;overflow-y:auto;margin-top:8px">
@@ -66,5 +71,3 @@
         <span style="font-size:12px;color:#999">从今天起30天自动排班。手动添加的任务🔒锁定不会被覆盖。</span>
     </div>
 </div>
-
-<!-- ========== 手动排班 ========== -->

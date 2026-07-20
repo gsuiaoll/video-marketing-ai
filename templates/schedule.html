@@ -78,7 +78,21 @@ function showScheduleTab(name, el) {
     el.classList.add('active');
     document.getElementById('sch-forms').style.display = name === 'forms' ? '' : 'none';
     document.getElementById('sch-merchants').style.display = name === 'merchants' ? '' : 'none';
+    localStorage.setItem('scheduleTab', name);
 }
+// 恢复上次的标签页（DOM 加载后执行）
+document.addEventListener('DOMContentLoaded', function() {
+    var saved = localStorage.getItem('scheduleTab');
+    if (saved && saved !== 'forms') {
+        var tabs = document.querySelectorAll('.sch-tab');
+        for (var i = 0; i < tabs.length; i++) {
+            if (tabs[i].getAttribute('onclick').indexOf(saved) >= 0) {
+                showScheduleTab(saved, tabs[i]);
+                break;
+            }
+        }
+    }
+});
 </script>
 
 <!-- ========== 弹窗 ========== -->
