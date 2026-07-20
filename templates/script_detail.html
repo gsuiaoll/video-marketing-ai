@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ script.title }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ script.title }}</h1>
+    <div>
+        <span class="badge">{{ script.merchant.name if script.merchant else '' }}</span>
+        <span class="badge">{{ script.platform }}</span>
+        <span class="badge">🤖 AI</span>
+        {% if script.is_starred %}<span class="badge badge-yellow">⭐ 标星</span>{% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="script-hook">
+        <span class="badge badge-red">钩子</span>
+        {{ content.hook }}
+    </div>
+
+    <h3>分镜脚本</h3>
+    <table class="table">
+        <thead>
+            <tr><th>#</th><th>画面描述</th><th>台词/旁白</th><th>时长(秒)</th></tr>
+        </thead>
+        <tbody>
+            {% for shot in content.shots %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ shot.description }}</td>
+                <td>{{ shot.lines }}</td>
+                <td>{{ shot.duration_sec }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="margin-top:16px">
+        <span class="badge badge-blue">CTA</span>
+        {{ content.cta }}
+    </div>
+
+    <div style="margin-top:12px">
+        <span class="badge">标签</span>
+        {% for tag in content.tags %}
+        <span class="badge">{{ tag }}</span>
+        {% endfor %}
+    </div>
+</div>
+
+<div style="margin-top:16px">
+    <a href="/scripts/{{ script.id }}/star" class="btn btn-sm">{{ '取消标星' if script.is_starred else '⭐ 标星' }}</a>
+    <a href="/scripts" class="btn btn-sm">返回列表</a>
+</div>
+{% endblock %}

@@ -1,0 +1,186 @@
+</div>
+
+<!-- ========== 拍摄商家管理 ========== -->
+<div class="page-header">
+    <h1>📅 拍摄排班 — {{ month_name }}</h1>
+    <a href="/schedule?month={{ prev_month }}" class="btn btn-sm">← 上月</a>
+    <a href="/schedule?month={{ next_month }}" class="btn btn-sm">下月 →</a>
+    <a href="/schedule?month={{ today.strftime('%Y-%m') }}" class="btn btn-sm">本月</a>
+</div>
+
+</div>
+<script>
+}
+</script>
+
+<div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+        <h3 style="margin:0">🏪 拍摄商家 (<span x-text="merchantCount">{{ shooting_merchants|length }}</span>家)</h3>
+        <button class="btn btn-primary btn-sm" id="show-add-btn" onclick="showAddForm()">+ 添加商家</button>
+    </div>
+
+        <!-- 从商家库快速关联 -->
+        {% if all_merchants %}
+        <div style="margin-top:12px;padding:12px;background:#f6ffed;border-radius:8px;border:1px solid #b7eb8f">
+            <strong style="font-size:13px">📋 从商家库关联已有商家</strong>
+            <form method="post" action="/schedule/merchant/new" style="display:flex;gap:8px;margin-top:8px;align-items:end">
+                <div class="form-group" style="margin:0;flex:1">
+                    <select name="from_main_id" style="width:100%" required>
+                        <option value="">选择商家…</option>
+                        {% for am in all_merchants %}
+                        <option value="{{ am.id }}">{{ am.name }} — {{ am.district or '未知区域' }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <input type="hidden" name="photographer_id" value="{{ sel_pid }}">
+                <button type="submit" class="btn btn-primary btn-sm" style="white-space:nowrap">关联到此摄影师</button>
+            </form>
+        </div>
+        {% endif %}
+
+    <!-- 手动添加商家表单 -->
+    <div id="add-form" style="display:none;margin-top:16px;padding:16px;background:#fafafa;border-radius:8px;border:1px dashed #d9d9d9">
+        <form method="post" action="/schedule/merchant/new" id="merchant-form">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px">
+                <div class="form-group" style="margin-bottom:8px">
+                    <label>商家名称 *</label>
+                    <input type="text" name="name" id="m-name" required>
+                </div>
+                <div class="form-group" style="margin-bottom:8px">
+                    <label>所在区域 *</label>
+                    <select name="district" id="m-district">
+                        <option value="">请选择</option>
+                        <option value="天河车陂">天河车陂</option>
+                        <option value="天河珠江新城">天河珠江新城</option>
+                        <option value="天河其他">天河其他</option>
+                        <option value="海珠">海珠</option>
+                        <option value="越秀">越秀</option>
+                        <option value="荔湾">荔湾</option>
+                        <option value="番禺">番禺</option>
+                        <option value="白云">白云</option>
+                        <option value="黄埔">黄埔</option>
+                        <option value="花都">花都（远途）</option>
+                        <option value="增城">增城（远途）</option>
+                        <option value="从化">从化（远途）</option>
+                        <option value="南沙">南沙（远途）</option>
+                        <option value="清远">清远（远途）</option>
+                        <option value="佛山">佛山（远途）</option>
+                        <option value="东莞">东莞（远途）</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom:8px">
+                    <label>月目标视频数 <span id="quota-hint" style="font-size:11px;color:#999"></span></label>
+                    <input type="number" name="monthly_quota" id="m-quota" value="25" min="0" max="60" onchange="updateQuotaHint()">
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div class="form-group" style="margin-bottom:8px">
+                    <label>详细地址</label>
+                    <input type="text" name="address" id="m-address" placeholder="如：天河区车陂路XX号">
+                </div>
+                <div class="form-group" style="margin-bottom:8px">
+                    <label>联系人</label>
+                    <input type="text" name="contact_name" id="m-contact" placeholder="联系人">
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom:8px">
+                    <label>所属摄影师（可多选，留空则继承父商家）</label>
+                    <div style="display:flex;gap:16px;flex-wrap:wrap;padding:4px 0">
+                        {% for p in photographers %}
+                        <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer">
+                            <input type="checkbox" name="photographer_ids" value="{{ p.id }}" class="pg-cb">
+                            {{ p.name }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom:8px">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                        <input type="checkbox" name="need_shooting" value="1" id="m-need-shooting" checked onchange="document.getElementById('m-need-shooting-hidden').value=this.checked?'1':'0'">
+                        <input type="hidden" name="need_shooting" id="m-need-shooting-hidden" value="1">
+                        需要拍摄排班 <span style="font-size:11px;color:#999">（取消勾选则该商家不参与排班生成）</span>
+                    </label>
+                </div>
+                <div class="form-group" style="margin-bottom:8px">
+                    <label>关联商家（同一公司不同地点，共享月配额）</label>
+                    <select name="linked_merchant_id" id="m-linked">
+                        <option value="">无（独立商家）</option>
+                        {% for sm in shooting_merchants %}
+                        <option value="{{ sm.id }}">{{ sm.name }}（{{ sm.district or '' }}）</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <input type="hidden" name="id" id="m-id">
+            <div style="display:flex;gap:8px">
+                <button type="submit" class="btn btn-primary btn-sm" id="m-submit">保存</button>
+                <button type="button" class="btn btn-sm" onclick="cancelForm()">取消</button>
+            </div>
+        </form>
+    </div>
+    </div>
+
+    {% if shooting_merchants %}
+    <table class="table" style="margin-top:12px">
+        <thead>
+            <tr>
+                <th>名称</th>
+                <th>区域</th>
+                <th>摄影师</th>
+                <th>出镜IP</th>
+                <th>月配额</th>
+                <th>拍摄</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in shooting_merchants %}
+            {% set is_child = m.linked_merchant_id and m.linked_merchant_id > 0 %}
+            <tr style="{% if is_child %}background:#fafafa{% endif %}">
+                <td>
+                    {% if is_child %}
+                    <span style="color:#999;margin-right:4px">└</span>
+                    {% endif %}
+                    <strong>{{ m.name }}</strong>
+                    {% if is_child %}
+                    {% set parent_m = shooting_merchants | selectattr('id', '==', m.linked_merchant_id) | list %}
+                    {% if parent_m %}
+                    <span style="color:#999;font-size:11px;margin-left:4px">← {{ parent_m[0].name }}</span>
+                    {% endif %}
+                    {% endif %}
+                </td>
+                <td><span class="badge {% if m.district in ('清远','花都','增城','从化','南沙','佛山','东莞','中山','惠州') %}badge-yellow{% else %}badge-blue{% endif %}">{{ m.district or '-' }}</span></td>
+                <td>
+                    {% set pgs = merchant_photographers.get(m.id, []) %}
+                    {% if pgs %}
+                    {% for p in pgs %}<span class="badge badge-blue" style="margin-right:2px">{{ p.name }}</span>{% endfor %}
+                    {% else %}-{% endif %}
+                </td>
+                <td>{% set ips = merchant_ips.get(m.id, []) %}{% if ips %}{% for ip in ips %}<span class="badge" style="background:#fff0f6;color:#c41d7f;margin-right:2px;font-size:11px">{{ ip.name }}</span>{% endfor %}{% else %}-{% endif %}</td>
+                <td>
+                    {% if is_child %}
+                    <span title="分厂配额（从总公司总额中分配）">{{ m.monthly_quota or 0 }}条</span>
+                    {% else %}
+                    {% set child_sum = namespace(val=0) %}
+                    {% for sm in shooting_merchants %}
+                    {% if sm.linked_merchant_id == m.id %}{% set child_sum.val = child_sum.val + (sm.monthly_quota or 0) %}{% endif %}
+                    {% endfor %}
+                    {% if child_sum.val > 0 %}
+                    <span title="公司总额">{{ m.monthly_quota or 25 }}条</span>
+                    <span style="color:#999;font-size:11px">（总部{{ (m.monthly_quota or 25) - child_sum.val }} + 分厂{{ child_sum.val }}）</span>
+                    {% else %}
+                    {{ m.monthly_quota or 25 }}条/月
+                    {% endif %}
+                    {% endif %}
+                </td>
+                <td style="text-align:center">{{ '✅' if (m.need_shooting is none or m.need_shooting == 1) else '❌' }}</td>
+                <td>
+                    <a href="javascript:void(0)" class="btn btn-sm" onclick="editMerchant({{ m.id }}, '{{ m.name|e }}', '{{ m.district or '' }}', '{{ m.contact_name or ''|e }}', {{ m.monthly_quota or 25 }}, '{{ (m.address or '')|e }}', {{ m.linked_merchant_id or 0 }}, [{% for p in merchant_photographers.get(m.id, []) %}{{ p.id }}{% if not loop.last %},{% endif %}{% endfor %}], {{ m.need_shooting if m.need_shooting is not none else 1 }})">编辑</a>
+                    <a href="/schedule/merchant/{{ m.id }}/delete" class="btn btn-sm" style="color:#ff4d4f" onclick="return confirm('确认删除「{{ m.name }}」及关联排班？')">删除</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+{% endif %}

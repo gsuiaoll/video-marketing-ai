@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+data/app.db
+data/settings.json
+data/videos/
+*.log
+.env

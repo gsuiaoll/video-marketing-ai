@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ title or "出错了" }}{% endblock %}
+{% block content %}
+<div class="empty-state">
+    <h2 style="color:#ff4d4f">{{ title or "出错了" }}</h2>
+    <p style="margin-top:16px;font-size:16px">{{ message }}</p>
+    {% if hint %}
+    <p style="color:#999;margin-top:8px">{{ hint }}</p>
+    {% endif %}
+    <div style="margin-top:24px">
+        <a href="javascript:history.back()" class="btn">← 返回</a>
+        <a href="/merchants" class="btn btn-primary">返回商家列表</a>
+    </div>
+</div>
+{% endblock %}

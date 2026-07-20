@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}AI生成文案{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>🤖 AI生成拍摄文案</h1>
+    <a href="/scripts">← 返回文案列表</a>
+</div>
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+<div class="card">
+    <form method="post" action="/scripts/generate">
+        <div class="form-row">
+            <div class="form-group">
+                <label>选择商家 *</label>
+                <select name="merchant_id" required>
+                    <option value="">请选择</option>
+                    {% for m in merchants %}
+                    <option value="{{ m.id }}" {% if request.query_params.get('merchant_id')|int == m.id %}selected{% endif %}>{{ m.name }} ({{ m.industry or '未设置行业' }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>目标平台</label>
+                <select name="platform">
+                    <option value="douyin">抖音</option>
+                    <option value="tiktok">TikTok</option>
+                    <option value="wechat">视频号</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>视频时长（秒）</label>
+                <input type="number" name="duration_sec" value="60" min="15" max="300">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>产品/服务卖点 *</label>
+            <textarea name="product_info" rows="3" placeholder="描述商家要推广的产品或服务，突出卖点。例如：&#10;主打纯手工现做甜点，选用进口动物奶油，每种甜点限量供应，每天下午2点开售即刻售罄" required></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>额外要求（选填）</label>
+            <textarea name="extra_requirements" rows="2" placeholder="如：需要真人出镜 / 强调优惠力度 / 用方言 / 突出性价比 等"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg">🚀 生成文案</button>
+    </form>
+</div>
+
+{% if result %}
+<div class="card" style="margin-top:24px">
+    <h2>📝 生成结果</h2>
+
+    <div style="margin:16px 0">
+        <span class="badge badge-green">标题</span>
+        <strong>{{ result.title }}</strong>
+    </div>
+
+    <div class="script-hook">
+        <span class="badge badge-red">钩子</span>
+        {{ result.hook }}
+    </div>
+
+    <h3 style="margin-top:20px">📋 分镜脚本</h3>
+    <table class="table">
+        <thead>
+            <tr><th>#</th><th>画面描述</th><th>台词/旁白</th><th>时长(秒)</th></tr>
+        </thead>
+        <tbody>
+            {% for shot in result.shots %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ shot.description }}</td>
+                <td>{{ shot.lines }}</td>
+                <td>{{ shot.duration_sec }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="margin-top:16px">
+        <span class="badge badge-blue">CTA</span>
+        {{ result.cta }}
+    </div>
+
+    <div style="margin-top:12px">
+        <span class="badge">标签</span>
+        {% for tag in result.tags %}
+        <span class="badge">{{ tag }}</span>
+        {% endfor %}
+    </div>
+
+    <div style="margin-top:20px">
+        <span class="text-muted">文案已自动保存到数据库，可在文案列表查看管理</span>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

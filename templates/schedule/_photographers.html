@@ -1,0 +1,25 @@
+<!-- ========== 摄影师管理 ========== -->
+<div class="card" style="margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+        <h3 style="margin:0">📷 摄影师 ({{ photographers|length }}人)</h3>
+        <button class="btn btn-primary btn-sm" onclick="showPgForm()" id="show-pg-btn">+ 添加摄影师</button>
+    </div>
+    <div id="pg-form" style="display:none;margin-top:12px;padding:12px;background:#fafafa;border-radius:6px;border:1px dashed #d9d9d9">
+        <form method="post" id="pg-form-el" action="/schedule/photographer/new" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+            <input type="hidden" name="pg_id" id="pg-id"><input type="hidden" name="photographer_id" value="{{ sel_pid }}">
+            <div class="form-group" style="margin:0;flex:1"><label>姓名 *</label><input type="text" name="name" id="pg-name" required style="width:100%"></div>
+            <div class="form-group" style="margin:0;flex:1"><label>电话</label><input type="text" name="phone" id="pg-phone" style="width:100%"></div>
+            <button type="submit" class="btn btn-primary btn-sm" id="pg-submit">保存</button>
+            <button type="button" class="btn btn-sm" onclick="document.getElementById('pg-form').style.display='none';document.getElementById('show-pg-btn').style.display='inline-block'">取消</button>
+        </form>
+    </div>
+    {% if photographers %}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        {% for p in photographers %}
+        <span style="background:#f0f5ff;border:1px solid #adc6ff;padding:4px 10px;border-radius:4px;font-size:13px">
+            {{ p.name }}{% if p.phone %} ({{ p.phone }}){% endif %}
+            <a href="javascript:void(0)" onclick="editPg({{ p.id }},'{{ p.name|e }}','{{ p.phone or ''|e }}')" style="color:#1890ff;margin-left:4px">✏️</a>
+            <a href="/schedule/photographer/{{ p.id }}/delete" style="color:#ff4d4f;margin-left:2px" onclick="return confirm('删除摄影师？')">🗑</a>
+        </span>{% endfor %}
+    </div>{% endif %}
+</div>

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}商家管理{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>商家管理</h1>
+    <a href="/merchants/new" class="btn btn-primary">+ 新建商家</a>
+</div>
+
+{% if merchants %}
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>商家名称</th>
+            <th>区域</th>
+            <th>行业</th>
+            <th>拍摄</th>
+            <th>亮点摘要</th>
+            <th>月配额</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for m in merchants %}
+        {% if not m.linked_merchant_id %}
+        {% set summary = [] %}
+        {% if m.products_dishes and m.products_dishes.strip() %}{% set _ = summary.append('🍽 ' + m.products_dishes[:30]) %}{% endif %}
+        {% if not summary and m.service_features and m.service_features.strip() %}{% set _ = summary.append('💡 ' + m.service_features[:30]) %}{% endif %}
+        {% if not summary and m.business_model and m.business_model.strip() %}{% set _ = summary.append('🏢 ' + m.business_model[:30]) %}{% endif %}
+        <tr>
+            <td>{{ m.id }}</td>
+            <td><a href="/merchants/{{ m.id }}"><strong>{{ m.name }}</strong></a></td>
+            <td>{{ m.district or '-' }}</td>
+            <td>{{ m.industry or '-' }}</td>
+            <td style="text-align:center">{% if m.need_shooting is none or m.need_shooting == 1 %}✅{% else %}❌{% endif %}</td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#666" title="{{ m.products_dishes or '' }}">
+                {{ summary[0] if summary else '-' }}
+            </td>
+            {% set child_quota_sum = namespace(val=0) %}
+            {% for child in children_map.get(m.id, []) %}
+                {% set child_quota_sum.val = child_quota_sum.val + (child.monthly_quota or 0) %}
+            {% endfor %}
+            <td>
+                {% if m.need_shooting == 0 %}-
+                {% elif children_map.get(m.id) %}
+                <span title="公司总额">{{ m.monthly_quota or 25 }}条</span>
+                <span style="color:#999;font-size:11px">（总部{{ (m.monthly_quota or 25) - child_quota_sum.val }} + 分厂{{ child_quota_sum.val }}）</span>
+                {% else %}
+                {{ m.monthly_quota or 25 }}条/月
+                {% endif %}
+            </td>
+            <td>
+                <a href="/merchants/{{ m.id }}" class="btn btn-sm">详情</a>
+                <a href="/merchants/{{ m.id }}/edit" class="btn btn-sm">编辑</a>
+                <a href="/merchants/{{ m.id }}/delete" class="btn btn-sm" style="color:#ff4d4f" onclick="return confirm('确认删除「{{ m.name }}」？将同时删除其抖音账号、文案和视频。')">删除</a>
+            </td>
+        </tr>
+        {% for child in children_map.get(m.id, []) %}
+        {% set csummary = [] %}
+        {% if child.products_dishes and child.products_dishes.strip() %}{% set _ = csummary.append('🍽 ' + child.products_dishes[:30]) %}{% endif %}
+        {% if not csummary and child.service_features and child.service_features.strip() %}{% set _ = csummary.append('💡 ' + child.service_features[:30]) %}{% endif %}
+        {% if not csummary and child.business_model and child.business_model.strip() %}{% set _ = csummary.append('🏢 ' + child.business_model[:30]) %}{% endif %}
+        <tr style="background:#fafafa">
+            <td>{{ child.id }}</td>
+            <td style="padding-left:24px"><span style="color:#999">└</span> <a href="/merchants/{{ child.id }}">{{ child.name }}</a> <span style="color:#999;font-size:11px">← {{ m.name }}</span></td>
+            <td>{{ child.district or '-' }}</td>
+            <td>{{ child.industry or '-' }}</td>
+            <td style="text-align:center">{% if child.need_shooting is none or child.need_shooting == 1 %}✅{% else %}❌{% endif %}</td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#666" title="{{ child.products_dishes or '' }}">
+                {{ csummary[0] if csummary else '-' }}
+            </td>
+            <td>{% if child.need_shooting == 0 %}-{% else %}<span style="color:#999;font-size:12px">{{ child.monthly_quota or 0 }}条（分厂份额）</span>{% endif %}</td>
+            <td>
+                <a href="/merchants/{{ child.id }}" class="btn btn-sm">详情</a>
+                <a href="/merchants/{{ child.id }}/edit" class="btn btn-sm">编辑</a>
+                <a href="/merchants/{{ child.id }}/delete" class="btn btn-sm" style="color:#ff4d4f" onclick="return confirm('确认删除「{{ child.name }}」？')">删除</a>
+            </td>
+        </tr>
+        {% endfor %}
+        {% endif %}
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+    <p>还没有商家，点击右上角"新建商家"开始</p>
+</div>
+{% endif %}
+{% endblock %}

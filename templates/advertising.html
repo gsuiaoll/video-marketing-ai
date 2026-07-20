@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}投放看板{% endblock %}
+{% block content %}
+{% set mid = request.query_params.get('merchant_id', '') %}
+{% set qm = '&merchant_id=' ~ mid if mid else '' %}
+<div class="page-header">
+    <h1>📊 投放看板</h1>
+    <div style="display:flex;align-items:center;gap:12px">
+        <select onchange="var u=new URL(location);u.searchParams.set('merchant_id',this.value);location.href=u" style="width:auto;padding:6px 12px;font-size:14px;border:1px solid #d9d9d9;border-radius:6px">
+            <option value="">🏪 全部商家</option>{% for m in merchants %}<option value="{{ m.id }}" {% if request.query_params.get('merchant_id')|int == m.id %}selected{% endif %}>{{ m.name }}</option>{% endfor %}</select>
+    </div>
+    <div style="display:flex;gap:8px">
+        <a href="/advertising/refresh" class="btn btn-sm" title="刷新所有账户 Token">🔄 刷新Token</a>
+        <a href="/advertising/authorize" class="btn btn-sm">🔗 授权巨量引擎</a>
+        <a href="/settings" class="btn btn-sm">⚙️ 设置</a>
+    </div>
+</div>
+
+{% if not configured and not has_linked %}
+<div class="card" style="text-align:center;padding:48px">
+    <h2>🔗 还未配置投放账户</h2>
+    <p style="color:#999;margin:12px 0">两种方式关联投放数据：</p>
+    <div style="display:flex;gap:16px;justify-content:center;text-align:left">
+        <div style="background:#f0f5ff;padding:16px;border-radius:8px;width:240px"><strong>📊 巨量引擎（本地推）</strong><p style="font-size:12px;color:#666">去设置页配 App ID / Secret → OAuth 授权 → 自动拉取数据</p><a href="/settings" class="btn btn-sm btn-primary">配置凭证</a></div>
+        <div style="background:#fff7e6;padding:16px;border-radius:8px;width:240px"><strong>📢 ADQ 腾讯广告</strong><p style="font-size:12px;color:#666">去商家详情页点「+ 手动录入」关联广告主 ID</p><a href="/merchants" class="btn btn-sm btn-primary">去关联</a></div>
+    </div>
+</div>
+{% elif not configured %}
+<div class="card" style="text-align:center;padding:48px">
+    <h2>📊 巨量引擎未配置</h2><p style="color:#999">投放数据仅显示已关联的 ADQ 账户。如需巨量引擎数据，请配置凭证。</p>
+    <a href="/settings" class="btn btn-sm">配置巨量引擎</a>
+</div>
+{% else %}
+
+<!-- 关联广告账户 -->
+<div class="card" style="margin-bottom:16px">
+    <h3 style="margin:0 0 12px">🔗 已关联投放账户 ({{ linked_accounts|length }})</h3>
+
+    <!-- 巨量引擎已关联 -->
+    {% if ocean_accs %}
+    <p style="font-size:12px;color:#666;margin:0 0 4px">📊 巨量引擎</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        {% for acc in ocean_accs %}
+        <span style="background:#f0f5ff;border:1px solid #adc6ff;padding:4px 10px;border-radius:4px;font-size:12px">
+            🏪 {{ acc.merchant.name if acc.merchant else '-' }} → {{ acc.account_name or acc.advertiser_id }}
+            <a href="/advertising/unlink/{{ acc.id }}" style="color:#ff4d4f;margin-left:4px" onclick="return confirm('解除关联？')" title="解绑">✕</a>
+        </span>{% endfor %}</div>{% endif %}
+
+    <!-- ADQ 已关联 -->
+    {% if adq_accs %}
+    <p style="font-size:12px;color:#666;margin:0 0 4px">📢 ADQ 腾讯广告</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        {% for acc in adq_accs %}
+        <span style="background:#fff7e6;border:1px solid #ffa940;padding:4px 10px;border-radius:4px;font-size:12px">
+            🏪 {{ acc.merchant.name if acc.merchant else '-' }} → {{ acc.account_name or acc.advertiser_id }}
+            <a href="/merchants/platform-account/{{ acc.id }}/delete?platform=adq" style="color:#ff4d4f;margin-left:4px" onclick="return confirm('解除关联？')">✕</a>
+        </span>{% endfor %}</div>{% endif %}
+
+    <p style="font-size:12px;color:#999;margin:0 0 8px">从商家详情页「平台账号」区域关联新账户，或在下方快速关联巨量引擎：</p>
+    <form method="post" action="/advertising/link" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+        <select name="merchant_id" style="min-width:150px"><option value="">选择商家</option>{% for m in merchants %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}</select>
+        <input type="text" name="advertiser_id" placeholder="巨量引擎广告主ID" style="width:180px">
+        <input type="text" name="account_name" placeholder="账户备注" style="width:120px">
+        <button type="submit" class="btn btn-primary btn-sm">关联巨量引擎</button>
+    </form>
+</div>
+
+<!-- 日期筛选 -->
+<div class="card" style="margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-weight:500">日期：</span>
+        <a href="?days=1{{ qm }}" class="btn btn-sm {{ 'btn-primary' if days == 1 else '' }}">今天</a>
+        <a href="?days=7{{ qm }}" class="btn btn-sm {{ 'btn-primary' if days == 7 else '' }}">近7天</a>
+        <a href="?days=30{{ qm }}" class="btn btn-sm {{ 'btn-primary' if days == 30 else '' }}">近30天</a>
+        <form method="get" style="display:flex;gap:8px;align-items:center;margin-left:auto">
+            <input type="date" name="start" value="{{ start_date }}" style="width:130px">
+            <span>至</span>
+            <input type="date" name="end" value="{{ end_date }}" style="width:130px">
+            <button type="submit" class="btn btn-sm btn-primary">查询</button>
+        </form>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert alert-error" style="margin-bottom:16px">⚠️ {{ error }}</div>
+{% endif %}
+
+{% if results %}
+<!-- 汇总统计 -->
+<div class="stat-grid" style="margin-bottom:20px">
+    <div class="stat-card">
+        <div class="stat-number" style="color:#ff4d4f">{{ "%.0f"|format(agg.cost) }}</div>
+        <div class="stat-label">总消耗 (元)</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ "{:,}".format(agg.show) }}</div>
+        <div class="stat-label">展示量</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ "{:,}".format(agg.click) }}</div>
+        <div class="stat-label">点击量</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">
+            {{ "%.1f%%"|format(agg.click / agg.show * 100) if agg.show > 0 else '-' }}
+        </div>
+        <div class="stat-label">点击率</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ "{:,}".format(agg.convert) }}</div>
+        <div class="stat-label">转化数</div>
+    </div>
+</div>
+
+<!-- 各账户明细 -->
+<div class="card" style="margin-bottom:20px">
+    <h3 style="margin:0 0 12px">📋 账户明细</h3>
+    <table class="table" style="font-size:13px">
+        <thead>
+            <tr>
+                <th>商家</th>
+                <th>广告账户</th>
+                <th>消耗(元)</th>
+                <th>展示</th>
+                <th>点击</th>
+                <th>点击率</th>
+                <th>转化</th>
+                <th>转化成本</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in results %}
+            <tr>
+                <td><strong>{{ r.merchant_name }}</strong></td>
+                <td>{{ r.account_name }}</td>
+                <td style="color:#ff4d4f">{{ "%.0f"|format(r.summary.cost) }}</td>
+                <td>{{ "{:,}".format(r.summary.show) }}</td>
+                <td>{{ "{:,}".format(r.summary.click) }}</td>
+                <td>{{ "%.1f%%"|format(r.summary.ctr) }}</td>
+                <td>{{ "{:,}".format(r.summary.convert) }}</td>
+                <td>{{ "%.1f"|format(r.summary.convert_cost) if r.summary.convert_cost > 0 else '-' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- 简易漏斗图 -->
+{% if agg.show > 0 %}
+<div class="card">
+    <h3 style="margin:0 0 12px">📈 投放漏斗（汇总）</h3>
+    <div style="display:flex;gap:24px;align-items:flex-end;height:180px;padding:0 20px">
+        {% set max_val = agg.show %}
+        <div style="text-align:center;flex:1">
+            <div style="background:linear-gradient(180deg,#69c0ff,#1890ff);width:70%;margin:0 auto;border-radius:4px 4px 0 0;height:100%"></div>
+            <span style="font-size:11px;color:#666;display:block;margin-top:4px">{{ "{:,}".format(agg.show) }} 展示</span>
+        </div>
+        <div style="text-align:center;flex:1">
+            <div style="background:linear-gradient(180deg,#ffd591,#fa8c16);width:70%;margin:0 auto;border-radius:4px 4px 0 0;height:{{ (agg.click / max_val * 100) if max_val > 0 else 0 }}%"></div>
+            <span style="font-size:11px;color:#666;display:block;margin-top:4px">{{ "{:,}".format(agg.click) }} 点击</span>
+        </div>
+        <div style="text-align:center;flex:1">
+            <div style="background:linear-gradient(180deg,#95de64,#52c41a);width:70%;margin:0 auto;border-radius:4px 4px 0 0;height:{{ (agg.convert / max_val * 100) if max_val > 0 else 0 }}%"></div>
+            <span style="font-size:11px;color:#666;display:block;margin-top:4px">{{ "{:,}".format(agg.convert) }} 转化</span>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% elif has_linked %}
+<div class="card" style="text-align:center;padding:48px">
+    <p style="color:#999">账户已关联，选择日期范围后查询</p>
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:48px">
+    <p style="color:#999">已配置凭证，请在上方关联至少一个商家的广告账户</p>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}视频管理{% endblock %}
+{% block content %}
+{% set qm = '&merchant_id=' ~ cur_merchant_id|string if cur_merchant_id else '' %}
+{% set qmall = '?merchant_id=' ~ cur_merchant_id|string if cur_merchant_id else '' %}
+<div class="page-header">
+    <h1>🎬 视频管理</h1>
+    <button onclick="var c=document.getElementById('upload-card');c.style.display=c.style.display=='none'?'block':'none'" class="btn btn-primary">+ 上传视频</button>
+</div>
+
+<div class="card" id="upload-card" style="display:none">
+    <h3 style="margin:0 0 16px">📤 上传视频</h3>
+    <form method="post" action="/videos/upload" enctype="multipart/form-data" onsubmit="document.getElementById('up-btn').disabled=true;document.getElementById('up-btn').textContent='上传中...'">
+        <div class="form-row">
+            <div class="form-group"><label>商家 *</label>
+                <select name="merchant_id" required>
+                    <option value="">选择商家</option>
+                    {% for m in merchants %}<option value="{{ m.id }}" {% if cur_merchant_id == m.id %}selected{% endif %}>{{ m.name }}</option>{% endfor %}
+                </select></div>
+            <div class="form-group"><label>目标平台</label>
+                <select name="platform"><option value="douyin">抖音</option><option value="shipinhao">视频号</option><option value="tiktok">TikTok</option></select></div>
+            <div class="form-group"><label>视频标题</label><input type="text" name="title" placeholder="可选，默认用文件名"></div>
+        </div>
+        <div class="form-group"><label>描述</label><textarea name="description" rows="2" placeholder="视频简介、文案说明"></textarea></div>
+        <div class="form-group"><label>标签（逗号分隔）</label><input type="text" name="tags" placeholder="如：牛肉面,招牌菜,店内实拍"></div>
+        <div class="form-group"><label>视频文件 *（最大500MB）</label><input type="file" name="file" accept="video/*" required></div>
+        <div style="display:flex;gap:8px">
+            <button type="submit" class="btn btn-primary" id="up-btn">上传</button>
+            <button type="button" class="btn btn-sm" onclick="document.getElementById('upload-card').style.display='none'">取消</button>
+        </div>
+    </form>
+</div>
+
+<div class="card" style="margin:16px 0;padding:12px 16px">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:12px;color:#666">筛选：</span>
+        <select onchange="location.href='?merchant_id='+this.value+'&platform={{ cur_platform }}&status={{ cur_status }}'" style="width:auto;padding:4px 8px;font-size:12px">
+            <option value="">全部商家</option>{% for m in merchants %}<option value="{{ m.id }}" {% if cur_merchant_id == m.id %}selected{% endif %}>{{ m.name }}</option>{% endfor %}</select>
+        <a href="?platform=&status={{ cur_status }}{{ qm }}" class="btn btn-sm {{ 'btn-primary' if not cur_platform else '' }}">全平台</a>
+        <a href="?platform=douyin&status={{ cur_status }}{{ qm }}" class="btn btn-sm {{ 'btn-primary' if cur_platform=='douyin' else '' }}">抖音</a>
+        <a href="?platform=shipinhao&status={{ cur_status }}{{ qm }}" class="btn btn-sm {{ 'btn-primary' if cur_platform=='shipinhao' else '' }}">视频号</a>
+        <a href="?platform=tiktok&status={{ cur_status }}{{ qm }}" class="btn btn-sm {{ 'btn-primary' if cur_platform=='tiktok' else '' }}">TikTok</a>
+        <a href="?platform={{ cur_platform }}{{ qm }}" class="btn btn-sm {{ 'btn-primary' if not cur_status else '' }}">全部</a>
+        <a href="?platform={{ cur_platform }}&status=published{{ qm }}" class="btn btn-sm {{ 'btn-primary' if cur_status=='published' else '' }}">已发布</a>
+        <a href="?platform={{ cur_platform }}&status=unpublished{{ qm }}" class="btn btn-sm {{ 'btn-primary' if cur_status=='unpublished' else '' }}">未发布</a>
+    </div>
+</div>
+
+{% if videos %}
+<table class="table" style="font-size:13px"><thead><tr>
+    <th>标题</th><th>商家</th><th>平台</th><th>描述</th><th>标签</th><th>发布</th><th>时间</th><th>操作</th>
+</tr></thead><tbody>
+{% for v in videos %}
+<tr>
+    <td><strong>{{ v.title }}</strong></td>
+    <td>{{ v.merchant.name if v.merchant else '-' }}</td>
+    <td>{% set plats={'douyin':'🎵抖音','shipinhao':'📺视频号','tiktok':'🌍TikTok'} %}{{ plats.get(v.platform, v.platform or '-') }}</td>
+    <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#666">{{ v.description or '-' }}</td>
+    <td style="font-size:11px;color:#666">{{ v.tags or '-' }}</td>
+    <td>{% if v.publish_status %}<span class="badge badge-green">✓ 已发布</span>{% else %}<span class="badge badge-yellow">待发布</span>{% endif %}</td>
+    <td style="font-size:11px;color:#999">{{ v.created_at.strftime('%m-%d %H:%M') if v.created_at else '' }}</td>
+    <td style="white-space:nowrap">
+        <a href="/videos/play/{{ v.id }}" target="_blank" class="btn btn-sm">播放</a>
+        <a href="/videos/{{ v.id }}/publish{{ qmall }}" class="btn btn-sm {{ 'btn-primary' if not v.publish_status else '' }}">{{ '取消发布' if v.publish_status else '✓ 发布' }}</a>
+        <a href="/videos/{{ v.id }}/delete{{ qmall }}" class="btn btn-sm" style="color:#ff4d4f" onclick="return confirm('确认删除？')">删除</a>
+    </td>
+</tr>{% endfor %}
+</tbody></table>
+{% else %}<div class="empty-state"><p>暂无视频，点右上角上传</p></div>{% endif %}
+{% endblock %}

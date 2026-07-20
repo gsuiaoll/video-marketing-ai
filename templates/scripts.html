@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}拍摄文案{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>拍摄文案</h1>
+    <a href="/scripts/generate" class="btn btn-primary">🤖 AI生成文案</a>
+</div>
+
+{% if merchants %}
+<div style="margin-bottom:16px">
+    <select onchange="location.href='?merchant_id='+this.value" style="width:auto">
+        <option value="">全部商家</option>
+        {% for m in merchants %}
+        <option value="{{ m.id }}" {% if request.query_params.get('merchant_id')|int == m.id %}selected{% endif %}>{{ m.name }}</option>
+        {% endfor %}
+    </select>
+</div>
+{% endif %}
+
+{% if scripts %}
+<table class="table">
+    <thead>
+        <tr>
+            <th>标题</th>
+            <th>商家</th>
+            <th>平台</th>
+            <th>来源</th>
+            <th>标星</th>
+            <th>时间</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for s in scripts %}
+        <tr>
+            <td><a href="/scripts/{{ s.id }}">{{ s.title }}</a></td>
+            <td>{{ s.merchant.name if s.merchant else '-' }}</td>
+            <td>{{ s.platform or '-' }}</td>
+            <td>{{ '🤖 AI' if s.ai_generated else '✍️ 手动' }}</td>
+            <td>{{ '⭐' if s.is_starred else '☆' }}</td>
+            <td>{{ s.created_at.strftime('%m-%d %H:%M') if s.created_at else '' }}</td>
+            <td>
+                <a href="/scripts/{{ s.id }}/star" class="btn btn-sm">{{ '取消标星' if s.is_starred else '标星' }}</a>
+                <a href="/scripts/{{ s.id }}/delete" class="btn btn-sm" style="color:#ff4d4f" onclick="return confirm('确认删除「{{ s.title }}」？')">删除</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+    <p>还没有文案，点击右上角"AI生成文案"开始</p>
+</div>
+{% endif %}
+{% endblock %}

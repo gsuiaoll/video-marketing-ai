@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}客服收件箱{% endblock %}
+{% block content %}
+{% set mid = request.query_params.get('merchant_id', '') %}
+{% set qm = '&merchant_id=' ~ mid if mid else '' %}
+<div class="page-header">
+    <h1>📨 客服收件箱 — 待人工处理</h1>
+    <div style="display:flex;align-items:center;gap:12px">
+        <span class="badge {% if cs_mode == 'ai' %}badge-green{% else %}badge-yellow{% endif %}">{{ 'AI在线' if cs_mode == 'ai' else 'Mock降级' }}</span>
+        <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+            <select onchange="var url=new URL(location);url.searchParams.set('merchant_id',this.value);location.href=url" style="width:auto;padding:4px 8px;font-size:12px;border-radius:4px">
+                <option value="">全部商家</option>{% for m in merchants %}<option value="{{ m.id }}" {% if request.query_params.get('merchant_id')|int == m.id %}selected{% endif %}>{{ m.name }}</option>{% endfor %}</select>
+            <a href="{{ '?merchant_id=' ~ mid if mid else '?' }}" class="btn btn-sm {{ 'btn-primary' if not request.query_params.get('platform') else '' }}">全部</a>
+            <a href="?platform=douyin{{ qm }}" class="btn btn-sm {{ 'btn-primary' if request.query_params.get('platform') == 'douyin' else '' }}">抖音</a>
+            <a href="?platform=wechat{{ qm }}" class="btn btn-sm {{ 'btn-primary' if request.query_params.get('platform') == 'wechat' else '' }}">微信</a>
+        </div>
+    </div>
+</div>
+
+<!-- 模拟测试 -->
+<div class="card" x-data="{ testMsg: '', result: null, loading: false }">
+    <h3>🧪 模拟测试 — 输入用户消息，看AI怎么回</h3>
+    <div style="display:flex;gap:8px;margin-top:12px">
+        <input type="text" x-model="testMsg" placeholder="比如：你好，我想咨询一下拍摄短视频怎么收费？" style="flex:1;padding:10px 14px;border:1px solid #d9d9d9;border-radius:6px;font-size:14px" @keyup.enter="if(testMsg && !loading) { loading=true; fetch('/cs/test-message', {method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'content='+encodeURIComponent(testMsg)}).then(r=>r.json()).then(d=>{result=d;loading=false}).catch(()=>{result={error:'请求失败'};loading=false}) }">
+        <button class="btn btn-primary" style="white-space:nowrap"
+            @click="if(testMsg && !loading) { loading=true; fetch('/cs/test-message', {method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'content='+encodeURIComponent(testMsg)}).then(r=>r.json()).then(d=>{result=d;loading=false}).catch(()=>{result={error:'请求失败'};loading=false}) }"
+            x-text="loading ? '思考中...' : '发送测试'"></button>
+    </div>
+
+    <div x-show="result" style="margin-top:16px;padding:16px;background:#f6ffed;border-radius:8px;border:1px solid #b7eb8f">
+        <template x-if="result.error">
+            <p style="color:#ff4d4f">❌ <span x-text="result.error"></span></p>
+        </template>
+        <template x-if="!result.error">
+            <div>
+                <p><strong>🤖 AI回复：</strong><span x-text="result.reply"></span></p>
+                <p style="margin-top:8px;font-size:12px;color:#999">
+                    意图：<span x-text="result.intent"></span> |
+                    置信度：<span x-text="(result.confidence*100).toFixed(0)+'%'"></span> |
+                    需要人工：<span x-text="result.needs_human ? '是' : '否'"></span>
+                </p>
+            </div>
+        </template>
+    </div>
+    <p style="margin-top:8px;font-size:12px;color:#bbb">💡 这里模拟抖音用户发私信，立刻看AI回复效果。不会真实发送到任何平台。</p>
+</div>
+
+{% if messages %}
+<table class="table">
+    <thead>
+        <tr>
+            <th>渠道</th>
+            <th>用户</th>
+            <th>消息内容</th>
+            <th>AI建议回复</th>
+            <th>置信度</th>
+            <th>意图</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for msg in messages %}
+        <tr class="cs-row" x-data="{ show: false }">
+            <td><span class="badge {{ 'badge-blue' if msg.platform == 'douyin' else 'badge-green' if msg.platform == 'wechat' else 'badge-yellow' }}">{{ {'douyin':'抖音','wechat':'微信','test':'测试'}.get(msg.platform, msg.platform) }}</span></td>
+            <td><strong>{{ msg.user_name }}</strong></td>
+            <td>{{ msg.content[:80] }}{% if msg.content|length > 80 %}...{% endif %}</td>
+            <td class="ai-suggestion">{{ msg.ai_suggestion[:80] }}{% if msg.ai_suggestion|length > 80 %}...{% endif %}</td>
+            <td>
+                <span class="badge {% if msg.confidence >= 0.7 %}badge-green{% else %}badge-yellow{% endif %}">
+                    {{ (msg.confidence * 100)|int }}%
+                </span>
+            </td>
+            <td>{{ msg.intent }}</td>
+            <td>
+                <button @click="show = !show" class="btn btn-sm btn-primary">处理</button>
+            </td>
+        </tr>
+        <tr x-show="show" @click.outside="show = false">
+            <td colspan="7">
+                <div style="padding:12px;background:#f8f9fa;border-radius:6px">
+                    <p><strong>用户消息：</strong>{{ msg.content }}</p>
+                    <p><strong>AI建议：</strong>{{ msg.ai_suggestion }}</p>
+                    <form method="post" action="/cs/inbox/{{ msg.id }}/reply" style="margin-top:12px">
+                        <textarea name="reply_text" rows="2" style="width:100%" placeholder="输入回复内容...">{{ msg.ai_suggestion }}</textarea>
+                        <button type="submit" class="btn btn-primary" style="margin-top:8px">发送回复</button>
+                    </form>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+    <p>🎉 没有待处理的消息</p>
+    <p class="text-muted">AI正在自动处理中...（当前为{{ 'AI智能模式' if cs_mode == 'ai' else 'Mock模拟' }}）</p>
+</div>
+{% endif %}
+
+<div style="margin-top:20px;padding:12px;background:#fff3cd;border-radius:6px">
+    <strong>💡 提示：</strong>
+    {% if cs_mode == 'ai' %}
+    当前 AI 客服在线（DeepSeek），高置信度消息自动回复，低置信度消息转上方人工处理。抖音审核通过后 Webhook 自动接收真实私信。
+    {% else %}
+    当前为 Mock 降级模式（未配置 API Key）。请在「设置」页面填入 DeepSeek API Key 启用 AI 客服。
+    {% endif %}
+</div>
+{% endblock %}

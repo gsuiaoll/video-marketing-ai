@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}{{ merchant.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ merchant.name }}</h1>
+    <div>
+        <a href="/scripts/generate?merchant_id={{ merchant.id }}" class="btn btn-primary">AI生成文案</a>
+        <a href="/douyin/connect/{{ merchant.id }}" class="btn btn-douyin">连接抖音</a>
+        <a href="/merchants/{{ merchant.id }}/edit" class="btn btn-sm">编辑</a>
+        <a href="/merchants/{{ merchant.id }}/delete" class="btn btn-sm" style="color:#ff4d4f" onclick="return confirm('确认删除「{{ merchant.name }}」？')">删除</a>
+    </div>
+</div>
+
+<div class="detail-grid">
+    <!-- 基本信息 -->
+    <div class="card">
+        <h3>基本信息</h3>
+        <p><strong>行业：</strong>{{ merchant.industry or '未设置' }}</p>
+        <p><strong>区域：</strong>{{ merchant.district or '未设置' }}</p>
+        <p><strong>地址：</strong>{{ merchant.address or '未设置' }}</p>
+        <p><strong>联系人：</strong>{{ merchant.contact_name or '未设置' }}</p>
+        <p><strong>电话：</strong>{{ merchant.contact_phone or '未设置' }}</p>
+        <p><strong>月目标视频：</strong>{{ merchant.monthly_quota or 25 }}条</p>
+        <p><strong>状态：</strong>{{ merchant.status }}</p>
+        {% if merchant.linked_merchant_id %}
+        <p><strong>所属总公司：</strong><a href="/merchants/{{ merchant.linked_merchant_id }}">查看总公司</a></p>
+        {% endif %}
+    </div>
+
+    <!-- 抖音账号 -->
+    <div class="card">
+        <h3>🎵 抖音账号</h3>
+        {% if douyin_accounts %}{% for acc in douyin_accounts %}
+        <div class="account-item"><span class="badge badge-green">{{ acc.status }}</span><span>{{ acc.account_name or '未命名' }}</span><span style="color:#999;font-size:12px">{{ acc.access_token[:8] if acc.access_token else '' }}...</span><a href="/douyin/delete/{{ acc.id }}" class="btn btn-sm" style="margin-left:auto;color:#ff4d4f" onclick="return confirm('确认删除？')">删除</a></div>
+        {% endfor %}{% else %}<p class="text-muted">未连接</p>{% endif %}
+        <div style="margin-top:8px;display:flex;gap:8px"><a href="/douyin/connect/{{ merchant.id }}" class="btn btn-sm btn-douyin">OAuth连接</a><button onclick="var f=document.getElementById('form-douyin');f.style.display=f.style.display=='none'?'block':'none'" class="btn btn-sm">+ 手动录入</button></div>
+        <div id="form-douyin" style="display:none;margin-top:8px;padding:10px;background:#fafafa;border-radius:6px;border:1px dashed #d9d9d9">
+            <form method="post" action="/douyin/manual-token/{{ merchant.id }}">
+                <input type="text" name="account_name" placeholder="账号名称" style="width:100%;margin-bottom:6px"><input type="text" name="access_token" placeholder="Access Token" style="width:100%;margin-bottom:6px"><input type="text" name="refresh_token" placeholder="Refresh Token" style="width:100%;margin-bottom:6px"><button type="submit" class="btn btn-primary btn-sm">保存</button></form>
+        </div>
+    </div>
+
+    <!-- 小红书账号 -->
+    <div class="card">
+        <h3>📕 小红书账号</h3>
+        {% if redbook_accounts %}{% for acc in redbook_accounts %}
+        <div class="account-item"><span class="badge badge-green">{{ acc.status }}</span><span>{{ acc.account_name or acc.user_id or '未命名' }}</span><a href="/merchants/platform-account/{{ acc.id }}/delete?platform=redbook" class="btn btn-sm" style="margin-left:auto;color:#ff4d4f" onclick="return confirm('确认删除？')">删除</a></div>
+        {% endfor %}{% else %}<p class="text-muted">未连接</p>{% endif %}
+        <button onclick="var f=document.getElementById('form-redbook');f.style.display=f.style.display=='none'?'block':'none'" class="btn btn-sm" style="margin-top:8px">+ 手动录入</button>
+        <div id="form-redbook" style="display:none;margin-top:8px;padding:10px;background:#fafafa;border-radius:6px;border:1px dashed #d9d9d9">
+            <form method="post" action="/merchants/{{ merchant.id }}/link-platform"><input type="hidden" name="platform" value="redbook">
+                <input type="text" name="account_name" placeholder="账号名称" style="width:100%;margin-bottom:6px"><input type="text" name="user_id" placeholder="小红书用户ID" style="width:100%;margin-bottom:6px"><input type="text" name="access_token" placeholder="Access Token" style="width:100%;margin-bottom:6px"><input type="text" name="refresh_token" placeholder="Refresh Token" style="width:100%;margin-bottom:6px"><button type="submit" class="btn btn-primary btn-sm">保存</button></form>
+        </div>
+    </div>
+
+    <!-- 巨量引擎 -->
+    <div class="card"><h3>📊 巨量引擎（本地推）</h3>
+        {% if ad_accounts %}{% for acc in ad_accounts %}<div class="account-item"><span class="badge badge-green">{{ acc.status }}</span><span>{{ acc.account_name or acc.advertiser_id }}</span><span style="color:#999;font-size:12px">ID: {{ acc.advertiser_id }}</span></div>{% endfor %}{% else %}<p class="text-muted">未关联，<a href="/advertising">去投放看板关联</a></p>{% endif %}
+    </div>
+
+    <!-- ADQ 腾讯广告 -->
+    <div class="card"><h3>📢 ADQ 腾讯广告</h3>
+        {% if adq_accounts %}{% for acc in adq_accounts %}
+        <div class="account-item"><span class="badge badge-green">{{ acc.status }}</span><span>{{ acc.account_name or acc.advertiser_id }}</span><span style="color:#999;font-size:12px">ID: {{ acc.advertiser_id }}</span><a href="/merchants/platform-account/{{ acc.id }}/delete?platform=adq" class="btn btn-sm" style="margin-left:auto;color:#ff4d4f" onclick="return confirm('确认删除？')">删除</a></div>
+        {% endfor %}{% else %}<p class="text-muted">未关联</p>{% endif %}
+        <button onclick="var f=document.getElementById('form-adq');f.style.display=f.style.display=='none'?'block':'none'" class="btn btn-sm" style="margin-top:8px">+ 手动录入</button>
+        <div id="form-adq" style="display:none;margin-top:8px;padding:10px;background:#fafafa;border-radius:6px;border:1px dashed #d9d9d9">
+            <form method="post" action="/merchants/{{ merchant.id }}/link-platform"><input type="hidden" name="platform" value="adq">
+                <input type="text" name="account_name" placeholder="账户备注名" style="width:100%;margin-bottom:6px"><input type="text" name="advertiser_id" placeholder="广告主 ID *" style="width:100%;margin-bottom:6px"><input type="text" name="access_token" placeholder="Access Token" style="width:100%;margin-bottom:6px"><input type="text" name="refresh_token" placeholder="Refresh Token" style="width:100%;margin-bottom:6px"><button type="submit" class="btn btn-primary btn-sm">保存</button></form>
+        </div>
+    </div>
+
+    <!-- 商家画像 -->
+    <div class="card card-full">
+        <h3>📋 商家画像</h3>
+        {% set profile_items = [
+            ('菜品/产品', merchant.products_dishes),
+            ('近期情况', merchant.recent_updates),
+            ('业务模式', merchant.business_model),
+            ('服务特色', merchant.service_features),
+            ('目标客户', merchant.target_customers),
+            ('竞争优势', merchant.competitive_advantages),
+            ('推广活动', merchant.promotions),
+            ('拍摄备注', merchant.shooting_notes),
+        ] %}
+        {% set has_profile = [] %}
+        {% for label, val in profile_items %}{% if val and val.strip() %}{% set _ = has_profile.append(1) %}{% endif %}{% endfor %}
+        {% if has_profile %}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px">
+            {% for label, val in profile_items %}
+            {% if val and val.strip() %}
+            <div style="padding:6px 0;border-bottom:1px solid #f5f5f5">
+                <strong style="font-size:12px;color:#666">{{ label }}</strong>
+                <p style="margin:2px 0 0;font-size:13px;white-space:pre-wrap">{{ val }}</p>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted">暂未填写商家画像信息，<a href="/merchants/{{ merchant.id }}/edit">去完善</a></p>
+        {% endif %}
+    </div>
+
+    <!-- 文案列表 -->
+    <div class="card card-full">
+        <h3>拍摄文案 ({{ scripts|length }})</h3>
+        {% if scripts %}
+        <table class="table">
+            <thead>
+                <tr><th>标题</th><th>平台</th><th>AI生成</th><th>标星</th><th>时间</th></tr>
+            </thead>
+            <tbody>
+            {% for s in scripts %}
+            <tr>
+                <td><a href="/scripts/{{ s.id }}">{{ s.title }}</a></td>
+                <td>{{ s.platform }}</td>
+                <td>{{ '🤖' if s.ai_generated else '✍️' }}</td>
+                <td>{{ '⭐' if s.is_starred else '-' }}</td>
+                <td>{{ s.created_at.strftime('%m-%d %H:%M') if s.created_at else '' }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>暂无文案，<a href="/scripts/generate?merchant_id={{ merchant.id }}">AI生成第一个</a></p>
+        {% endif %}
+    </div>
+
+    <!-- 视频列表 -->
+    <div class="card card-full">
+        <h3>视频资产 ({{ videos|length }})</h3>
+        {% if videos %}
+        <table class="table">
+            <thead>
+                <tr><th>标题</th><th>平台</th><th>状态</th><th>发布</th><th>时间</th></tr>
+            </thead>
+            <tbody>
+            {% for v in videos %}
+            <tr>
+                <td>{{ v.title }}</td>
+                <td>{{ v.platform or '-' }}</td>
+                <td>{{ v.status }}</td>
+                <td>{% if v.publish_status %}<span class="badge badge-green">已发布</span>{% else %}<span class="badge badge-yellow">待发布</span>{% endif %}</td>
+                <td>{{ v.created_at.strftime('%m-%d %H:%M') if v.created_at else '' }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>暂无视频</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

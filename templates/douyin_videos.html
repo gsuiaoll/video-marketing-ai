@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}抖音视频数据{% endblock %}
+{% block content %}
+{% set qm = '?merchant_id=' ~ mid|string if mid else '' %}
+<div class="page-header">
+    <h1>🎵 抖音视频监控</h1>
+    <span style="color:#999">Webhook 实时同步</span>
+    <a href="/douyin/videos/sync?merchant_id={{ mid }}" class="btn btn-primary btn-sm" style="margin-left:auto">🔄 拉取视频数据</a>
+</div>
+
+<div class="card" style="margin-bottom:16px;padding:12px 16px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-size:12px;color:#666">商家筛选：</span>
+        <select onchange="location.href='?merchant_id='+this.value" style="width:auto;padding:4px 8px;font-size:12px">
+            <option value="">全部商家</option>{% for m in merchants %}<option value="{{ m.id }}" {% if mid == m.id %}selected{% endif %}>{{ m.name }}</option>{% endfor %}</select>
+        <span style="margin-left:auto;font-size:12px;color:#999">共 {{ videos|length }} 条</span>
+    </div>
+</div>
+
+{% if videos %}
+<div class="card">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">
+    {% for v in videos %}
+    <div style="border:1px solid #f0f0f0;border-radius:8px;overflow:hidden">
+        {% if v.cover_url %}<img src="{{ v.cover_url }}" style="width:100%;height:140px;object-fit:cover" alt="">{% else %}<div style="width:100%;height:140px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;color:#ccc">无封面</div>{% endif %}
+        <div style="padding:8px 10px">
+            <strong style="font-size:13px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ v.title or '(无标题)' }}</strong>
+            <div style="display:flex;gap:12px;margin-top:6px;font-size:11px;color:#666">
+                <span>▶ {{ v.play_count or 0 }}</span><span>❤ {{ v.like_count or 0 }}</span><span>💬 {{ v.comment_count or 0 }}</span>
+            </div>
+            <div style="margin-top:6px;font-size:10px;color:#999;display:flex;justify-content:space-between;align-items:center">
+                <span>{{ v.created_at.strftime('%m-%d %H:%M') if v.created_at else '' }}</span>
+                <span>
+                    <a href="/douyin/videos/{{ v.id }}/jump{{ qm }}" target="_blank" class="btn btn-sm" style="font-size:10px" title="在抖音打开">🔗 跳转</a>
+                    <a href="/douyin/videos/{{ v.id }}/forward{{ qm }}" class="btn btn-sm" style="font-size:10px;color:#fe2c55" title="转发到抖音日常">📤 转发</a>
+                    <a href="/douyin/videos/{{ v.id }}/delete{{ qm }}" style="color:#ff4d4f;margin-left:4px" onclick="return confirm('删除？')">✕</a>
+                </span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    </div>
+</div>
+{% else %}
+<div class="empty-state"><p>还没有同步到抖音视频数据</p><p style="color:#999;font-size:12px">在抖音开放平台配置 Webhook 地址后，发布视频会自动同步到这里</p></div>
+{% endif %}
+
+<div style="margin-top:20px;padding:12px;background:#fff3cd;border-radius:6px">
+    <strong>📌 Webhook 配置说明：</strong><br>
+    <span style="font-size:12px">在抖音开放平台 → 应用设置 → Webhook 地址填入：<code>https://doze-unlatch-refrain.ngrok-free.dev/douyin/webhook/video</code>，事件类型勾选「视频发布」</span>
+</div>
+{% endblock %}

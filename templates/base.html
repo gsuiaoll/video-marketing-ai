@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}短视频营销AI系统{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body>
+    {% if request.cookies.get("user_id") %}
+    <nav class="navbar">
+        <div class="nav-brand">🎬 短视频AI营销</div>
+        <div class="nav-links">
+            <a href="/dashboard">工作台</a>
+            <a href="/merchants">商家</a>
+            <a href="/scripts">文案</a>
+            <a href="/videos">视频</a>
+            <a href="/advertising">📊投放</a>
+            <a href="/douyin/videos">🎵抖音</a>
+            <a href="/schedule">📅排班</a>
+            <a href="/cs/inbox">客服收件箱</a>
+            <a href="/settings">⚙️设置</a>
+            <span style="margin-left:20px;color:#999">用户: admin</span>
+            <a href="/auth/logout">退出</a>
+        </div>
+    </nav>
+    {% endif %}
+
+    <main class="container">
+        <div class="back-nav">
+            <a href="javascript:history.back()" class="back-btn">← 返回上一步</a>
+            {% block breadcrumb %}{% endblock %}
+        </div>
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

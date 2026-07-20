@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% block title %}{{ '编辑商家' if merchant else '新建商家' }}{% endblock %}
+{% block content %}
+<style>
+label .required { color:#ff4d4f; font-weight:bold; }
+</style>
+<div class="page-header">
+    <h1>{{ '编辑商家' if merchant else '新建商家' }}</h1>
+    <a href="{{ '/merchants/%s' % merchant.id if merchant else '/merchants' }}">← 返回</a>
+</div>
+
+<div class="card">
+    <form method="post" action="{{ '/merchants/%s/edit' % merchant.id if merchant else '/merchants/new' }}">
+        <div class="form-group">
+            <label>商家名称 <span class="required">*</span></label>
+            <input type="text" name="name" required value="{{ merchant.name if merchant else '' }}">
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+            <button type="submit" class="btn btn-primary btn-lg">{{ '保存修改' if merchant else '创建商家' }}</button>
+        </div>
+
+        {% set ns = merchant.need_shooting if merchant else 1 %}
+        <div class="form-group">
+            <label>拍摄需求 <span class="required">*</span></label>
+            <div style="display:flex;gap:24px;padding-top:4px">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px">
+                    <input type="radio" name="need_shooting" value="1" {{ 'checked' if ns is none or ns == 1 else '' }} onchange="toggleQuotaFields()">
+                    ✅ 需要拍摄 — 参与拍摄排班，系统自动安排日程
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px">
+                    <input type="radio" name="need_shooting" value="0" {{ 'checked' if ns == 0 else '' }} onchange="toggleQuotaFields()">
+                    ❌ 不需要拍摄 — 此商家不参与拍摄排班
+                </label>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>行业分类</label>
+                <select id="industry-cat" onchange="onIndustryCatChange()">
+                    <option value="">请选择大类</option>
+                    <option value="餐饮">餐饮</option>
+                    <option value="教育">教育</option>
+                    <option value="零售">零售</option>
+                    <option value="服务">服务</option>
+                    <option value="美妆">美妆</option>
+                    <option value="服装">服装</option>
+                    <option value="家居">家居</option>
+                    <option value="旅游">旅游</option>
+                    <option value="制造">制造</option>
+                    <option value="科技">科技</option>
+                    <option value="其他">其他</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>细分行业</label>
+                <select id="industry-sub" onchange="onIndustrySubChange()">
+                    <option value="">请先选大类</option>
+                </select>
+                <input type="text" id="industry-custom" placeholder="手动输入行业" style="display:none;margin-top:4px" oninput="document.getElementById('industry-hidden').value = this.value">
+            </div>
+            <input type="hidden" name="industry" id="industry-hidden" value="{{ merchant.industry if merchant else '' }}">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>联系人</label>
+                <input type="text" name="contact_name" value="{{ merchant.contact_name if merchant else '' }}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>联系电话</label>
+            <input type="text" name="contact_phone" value="{{ merchant.contact_phone if merchant else '' }}">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>所在区域 <span class="required">*</span></label>
+                <select name="district">
+                    <option value="">请选择</option>
+                    {% set d = merchant.district if merchant else '' %}
+                    <option value="天河车陂" {{ 'selected' if d == '天河车陂' else '' }}>天河车陂</option>
+                    <option value="天河珠江新城" {{ 'selected' if d == '天河珠江新城' else '' }}>天河珠江新城</option>
+                    <option value="天河其他" {{ 'selected' if d == '天河其他' else '' }}>天河其他</option>
+                    <option value="海珠" {{ 'selected' if d == '海珠' else '' }}>海珠</option>
+                    <option value="越秀" {{ 'selected' if d == '越秀' else '' }}>越秀</option>
+                    <option value="荔湾" {{ 'selected' if d == '荔湾' else '' }}>荔湾</option>
+                    <option value="番禺" {{ 'selected' if d == '番禺' else '' }}>番禺</option>
+                    <option value="白云" {{ 'selected' if d == '白云' else '' }}>白云</option>
+                    <option value="黄埔" {{ 'selected' if d == '黄埔' else '' }}>黄埔</option>
+                    <option value="花都" {{ 'selected' if d == '花都' else '' }}>花都（远途）</option>
+                    <option value="增城" {{ 'selected' if d == '增城' else '' }}>增城（远途）</option>
+                    <option value="从化" {{ 'selected' if d == '从化' else '' }}>从化（远途）</option>
+                    <option value="南沙" {{ 'selected' if d == '南沙' else '' }}>南沙（远途）</option>
+                    <option value="清远" {{ 'selected' if d == '清远' else '' }}>清远（远途）</option>
+                    <option value="佛山" {{ 'selected' if d == '佛山' else '' }}>佛山（远途）</option>
+                    <option value="东莞" {{ 'selected' if d == '东莞' else '' }}>东莞（远途）</option>
+                </select>
+            </div>
+            <div class="form-group" id="quota-group">
+                <label>月目标视频数</label>
+                <input type="number" name="monthly_quota" value="{{ merchant.monthly_quota if merchant else 25 }}" min="0" max="60">
+                <span style="font-size:11px;color:#999">默认25条（日更级别），不需要拍摄可设为0</span>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>详细地址</label>
+            <input type="text" name="address" value="{{ merchant.address if merchant else '' }}" placeholder="如：天河区车陂路XXX号">
+        </div>
+
+        <div class="form-group">
+            <label>关联总公司（分厂/子公司选择总公司）</label>
+            <select name="linked_merchant_id">
+                <option value="">无（独立商家/总公司）</option>
+                {% for am in all_merchants %}
+                <option value="{{ am.id }}" {{ 'selected' if merchant and merchant.linked_merchant_id == am.id else '' }}>{{ am.name }}（{{ am.district or '' }}）</option>
+                {% endfor %}
+            </select>
+            <span style="font-size:11px;color:#999">如果这是分厂或子公司，选择所属总公司。配额设为分厂的份额。</span>
+        </div>
+
+        <!-- 商家画像 -->
+        <div class="card" style="background:#fafafa;margin-top:16px">
+            <h3 style="margin:0 0 4px">📋 商家画像</h3>
+            <p style="color:#999;font-size:12px;margin:0 0 16px">填写越详细，AI生成的文案越贴合实际</p>
+            {% set profile_fields = [
+                ('products_dishes', '菜品/产品', '主打产品、招牌菜、爆款单品等'),
+                ('recent_updates', '近期情况', '最近活动、门店变化、新菜上市等'),
+                ('business_model', '业务模式', '堂食/外卖/加盟/直营/线上等'),
+                ('service_features', '服务特色', '差异化服务、体验亮点、环境特色等'),
+                ('target_customers', '目标客户', '客群画像、年龄层次、消费水平等'),
+                ('competitive_advantages', '竞争优势', '对比周边同行的优势、差异化卖点'),
+                ('promotions', '推广活动', '当前优惠、促销活动、会员权益等'),
+                ('shooting_notes', '拍摄备注', '场地光线、拍摄禁忌、偏好风格等'),
+            ] %}
+            {% for key, label, placeholder in profile_fields %}
+            <div class="form-group" style="margin-bottom:10px" {% if key == 'shooting_notes' %}id="shooting-notes-group"{% endif %}>
+                <label style="font-size:12px;font-weight:500">{{ label }}</label>
+                <textarea name="{{ key }}" rows="2" placeholder="{{ placeholder }}" style="font-size:13px">{{ merchant[key] if merchant and merchant[key] else '' }}</textarea>
+            </div>
+            {% endfor %}
+        </div>
+
+    </form>
+</div>
+
+<script>
+function toggleQuotaFields() {
+    var need = document.querySelector('input[name=\"need_shooting\"]:checked');
+    var show = need && need.value === '1';
+    document.getElementById('quota-group').style.display = show ? '' : 'none';
+    var snGroup = document.getElementById('shooting-notes-group');
+    if (snGroup) snGroup.style.display = show ? '' : 'none';
+}
+// Run on page load
+document.addEventListener('DOMContentLoaded', toggleQuotaFields);
+</script>
+<script>
+var CATEGORIES = {
+    '餐饮': ['中餐', '西餐', '日料', '韩餐', '火锅', '烧烤', '快餐', '小吃', '茶饮', '咖啡', '烘焙', '烘焙甜品', '自助餐', '外卖厨房', '私房菜', '其他餐饮'],
+    '教育': ['K12辅导', '成人教育', '艺术培训', '体育培训', '早教幼教', '留学咨询', '职业技能', '驾校', '语言培训', '其他教育'],
+    '零售': ['便利店', '超市', '日用百货', '数码电子', '文具办公', '生鲜果蔬', '烟酒茶叶', '母婴用品', '宠物用品', '其他零售'],
+    '服务': ['美容美发', '健身', '家政', '婚庆', '摄影', '维修', '洗衣', '宠物服务', '法律咨询', '财税服务', '快递物流', '其他服务'],
+    '美妆': ['护肤', '彩妆', '美甲', '纹绣', '医美', '美发护发', '香水', '其他美妆'],
+    '服装': ['女装', '男装', '童装', '鞋帽', '箱包', '配饰首饰', '运动户外', '内衣袜品', '定制服装', '其他服装'],
+    '家居': ['家具', '建材', '灯饰', '软装布艺', '家电', '卫浴', '涂料', '五金工具', '其他家居'],
+    '旅游': ['酒店', '民宿', '景点', '旅行社', '租车', '户外探险', '周边游', '其他旅游'],
+    '制造': ['食品加工', '纺织服装', '化工', '金属加工', '塑料制品', '电子制造', '机械', '其他制造'],
+    '科技': ['软件开发', '互联网', 'AI人工智能', '电商', '游戏', '硬件设备', 'IT服务', '其他科技'],
+    '其他': [],
+};
+
+function onIndustryCatChange() {
+    var cat = document.getElementById('industry-cat').value;
+    var sub = document.getElementById('industry-sub');
+    var custom = document.getElementById('industry-custom');
+    var hidden = document.getElementById('industry-hidden');
+
+    sub.innerHTML = '<option value="">请选择细分</option>';
+    var subs = CATEGORIES[cat] || [];
+    if (subs.length > 0) {
+        subs.forEach(function(s) {
+            sub.innerHTML += '<option value="' + s + '">' + s + '</option>';
+        });
+    }
+    // Always add custom option
+    sub.innerHTML += '<option value="__custom__">✏️ 手动输入…</option>';
+    sub.style.display = '';
+    custom.style.display = 'none';
+    hidden.value = '';
+}
+
+function onIndustrySubChange() {
+    var sub = document.getElementById('industry-sub').value;
+    var custom = document.getElementById('industry-custom');
+    var hidden = document.getElementById('industry-hidden');
+
+    if (sub === '__custom__') {
+        custom.style.display = '';
+        custom.focus();
+        hidden.value = custom.value;
+    } else if (sub) {
+        custom.style.display = 'none';
+        hidden.value = sub;
+    } else {
+        custom.style.display = 'none';
+        hidden.value = '';
+    }
+}
+
+// Init: if editing, try to match existing industry value
+(function() {
+    var existing = '{{ (merchant.industry if merchant else "")|e }}';
+    if (!existing) return;
+    var cat = document.getElementById('industry-cat');
+    var sub = document.getElementById('industry-sub');
+    var custom = document.getElementById('industry-custom');
+    var hidden = document.getElementById('industry-hidden');
+    // Try exact match in sub-categories first
+    var foundCat = null;
+    for (var c in CATEGORIES) {
+        if (CATEGORIES[c].indexOf(existing) >= 0) {
+            foundCat = c;
+            break;
+        }
+    }
+    if (foundCat) {
+        cat.value = foundCat;
+        onIndustryCatChange();
+        sub.value = existing;
+        onIndustrySubChange();
+    } else {
+        // No match — show as custom
+        cat.value = '其他';
+        onIndustryCatChange();
+        sub.value = '__custom__';
+        onIndustrySubChange();
+        custom.value = existing;
+        hidden.value = existing;
+    }
+})();
+</script>
+{% endblock %}

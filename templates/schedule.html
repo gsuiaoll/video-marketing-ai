@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}拍摄排班{% endblock %}
+{% block content %}
+
+<style>
+.calendar { background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.06); }
+.cal-header { display:grid; grid-template-columns:repeat(7,1fr); background:#fafafa; border-bottom:1px solid #f0f0f0; }
+.cal-day-name { padding:10px 4px; text-align:center; font-weight:600; font-size:13px; color:#666; }
+.cal-week { display:grid; grid-template-columns:repeat(7,1fr); }
+.cal-cell { min-height:90px; padding:6px; border-right:1px solid #f5f5f5; border-bottom:1px solid #f5f5f5; }
+.cal-cell:nth-child(7n) { border-right:none; }
+.cal-empty { background:#fafafa; }
+.cal-today { background:#e6f7ff; }
+.cal-today .cal-date { color:#1890ff; font-weight:700; }
+.cal-date { font-size:13px; margin-bottom:4px; }
+.cal-tasks { display:flex; flex-direction:column; gap:2px; }
+.cal-slot { display:flex; align-items:center; gap:2px; padding:2px 4px; border-radius:3px; font-size:11px; cursor:default; min-height:20px; }
+.slot-am { background:#e6f7ff; border-left:2px solid #1890ff; }
+.slot-pm { background:#fff7e6; border-left:2px solid #fa8c16; }
+.slot-fd { background:#f6ffed; border-left:2px solid #52c41a; }
+.slot-done { opacity:0.5; text-decoration:line-through; }
+.task-slot { font-size:10px; }
+.task-pg { font-size:9px;color:#999;margin-left:2px;white-space:nowrap; }
+.task-name { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.task-status { display:flex; gap:1px; }
+.task-action { text-decoration:none; font-size:10px; cursor:pointer; }
+.task-action:hover { transform:scale(1.2); }
+@keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(24,144,255,0.4)} 50%{box-shadow:0 0 0 6px rgba(24,144,255,0)} }
+</style>
+
+<div class="page-header">
+    <h1>📅 拍摄排班 — {{ month_name }}</h1>
+    <div style="display:flex;align-items:center;gap:8px">
+        <a href="/schedule?month={{ prev_month }}&photographer_id={{ sel_pid }}" class="btn btn-sm">← 上月</a>
+        <a href="/schedule?month={{ next_month }}&photographer_id={{ sel_pid }}" class="btn btn-sm">下月 →</a>
+        <a href="/schedule?month={{ today.strftime('%Y-%m') }}&photographer_id={{ sel_pid }}" class="btn btn-sm">本月</a>
+    </div>
+</div>
+
+<!-- ========== 摄影师筛选 ========== -->
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+    <span style="font-size:12px;color:#666">摄影师：</span>
+    <a href="/schedule" class="btn btn-sm {{ 'btn-primary' if not sel_pid else '' }}">全部</a>
+    {% for p in photographers %}
+    <a href="/schedule?photographer_id={{ p.id }}" class="btn btn-sm {{ 'btn-primary' if sel_pid == p.id else '' }}">{{ p.name }}</a>
+    {% endfor %}
+</div>
+
+<!-- ========== 日历 ========== -->
+{% include 'schedule/_calendar.html' %}
+
+<!-- ========== 内容标签 ========== -->
+<style>
+.sch-tab { padding:10px 20px; cursor:pointer; font-weight:600; font-size:14px; color:#999; border-bottom:2px solid transparent; display:inline-block; }
+.sch-tab.active { color:#1890ff; border-bottom-color:#1890ff; }
+.sch-panel { display:none; }
+.sch-panel.active { display:block; }
+</style>
+<div style="border-bottom:2px solid #f0f0f0;margin:16px 0 0 0">
+    <span class="sch-tab active" onclick="showScheduleTab('forms',this)">📋 排班操作</span>
+    <span class="sch-tab" onclick="showScheduleTab('merchants',this)">🏪 商家 & 出镜IP</span>
+</div>
+
+<div class="sch-panel active" id="sch-forms" style="padding-top:16px">
+{% include 'schedule/_forms.html' %}
+</div>
+
+<div class="sch-panel" id="sch-merchants" style="padding-top:16px">
+{% include 'schedule/_photographers.html' %}
+{% include 'schedule/_merchants.html' %}
+{% include 'schedule/_ips.html' %}
+</div>
+
+<!-- ========== 排班历史 ========== -->
+{% include 'schedule/_history.html' %}
+
+<script>
+function showScheduleTab(name, el) {
+    document.querySelectorAll('.sch-tab').forEach(function(t){t.classList.remove('active');});
+    el.classList.add('active');
+    document.querySelectorAll('.sch-panel').forEach(function(p){p.classList.remove('active');});
+    document.getElementById('sch-'+name).classList.add('active');
+}
+</script>
+
+<!-- ========== 弹窗 ========== -->
+<div id="block-popup" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:999;justify-content:center;align-items:center">
+    <div style="background:#fff;border-radius:12px;padding:24px;min-width:320px;box-shadow:0 8px 24px rgba(0,0,0,0.15)">
+        <h4 style="margin:0 0 16px">🔒 屏蔽时间段 — <span id="block-date-label"></span> <span id="block-slot-label"></span></h4>
+        <form method="post" action="/schedule/block">
+            <input type="hidden" name="date" id="block-date"><input type="hidden" name="time_slot" id="block-slot">
+            <div class="form-group"><label>选择商家</label><select name="merchant_id" style="width:100%">{% for m in shooting_merchants %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}</select></div>
+            <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn btn-sm" onclick="document.getElementById('block-popup').style.display='none'">取消</button><button type="submit" class="btn btn-primary btn-sm" style="background:#ff4d4f">确认屏蔽</button></div>
+        </form>
+    </div>
+</div>
+
+<div id="move-popup" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:999;justify-content:center;align-items:center">
+    <div style="background:#fff;border-radius:12px;padding:24px;min-width:320px;box-shadow:0 8px 24px rgba(0,0,0,0.15)">
+        <h4 style="margin:0 0 16px">↔️ 调整排班 — <span id="move-name"></span></h4>
+        <form method="post" id="move-form">
+            <div class="form-group"><label>新日期</label><input type="date" name="date" id="move-date" required style="width:100%"></div>
+            <div class="form-group"><label>时段</label><select name="time_slot" id="move-slot" style="width:100%"><option value="morning">🌅 上午</option><option value="afternoon">🌇 下午</option><option value="full_day">🌤️ 全天</option></select></div>
+            <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn btn-sm" onclick="document.getElementById('move-popup').style.display='none'">取消</button><button type="submit" class="btn btn-primary btn-sm">确认移动</button></div>
+        </form>
+    </div>
+</div>
+
+<script>
+{% include 'schedule/_scripts.html' %}
+</script>
+{% endblock %}

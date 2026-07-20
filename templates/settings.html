@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}系统设置{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>⚙️ 系统设置</h1>
+</div>
+
+{% if saved %}
+<div class="alert" style="background:#f6ffed;color:#52c41a;border:1px solid #b7eb8f">设置已保存，立即生效</div>
+{% endif %}
+
+<div class="card">
+    <h3>抖音开放平台</h3>
+    <p style="color:#999;margin-bottom:16px">在 <a href="https://open.douyin.com" target="_blank">open.douyin.com</a> 创建应用后获取</p>
+    <form method="post" action="/settings">
+        <div class="form-group">
+            <label>Client Key（必填，否则OAuth无法使用）</label>
+            <input type="text" name="douyin_client_key" value="{{ settings.get('douyin_client_key', '') }}" placeholder="粘贴 Client Key">
+        </div>
+        <div class="form-group">
+            <label>Client Secret</label>
+            <input type="text" name="douyin_client_secret" value="{{ settings.get('douyin_client_secret', '') }}" placeholder="粘贴 Client Secret">
+        </div>
+
+        <h3 style="margin-top:24px">AI 模型</h3>
+        <div class="form-group">
+            <label>DeepSeek API Key（推荐）</label>
+            <input type="text" name="deepseek_api_key" value="{{ settings.get('deepseek_api_key', '') }}" placeholder="sk-xxx">
+        </div>
+        <div class="form-group">
+            <label>通义千问 API Key（备选）</label>
+            <input type="text" name="qwen_api_key" value="{{ settings.get('qwen_api_key', '') }}" placeholder="sk-xxx">
+        </div>
+        <div class="form-group">
+            <label>OpenClaw 服务地址</label>
+            <input type="text" name="openclaw_url" value="{{ settings.get('openclaw_url', 'http://localhost:3001') }}" placeholder="http://localhost:3001">
+        </div>
+
+        <h3 style="margin-top:24px">📊 巨量引擎（本地推）</h3>
+        <p style="color:#999;margin-bottom:16px">
+            在 <a href="https://open.oceanengine.com" target="_blank">open.oceanengine.com</a> 创建应用后获取 App ID 和 Secret。
+            {% if settings.get('oceanengine_app_id') %}
+            <a href="/advertising/authorize" class="btn btn-sm" style="margin-left:8px">🔗 授权巨量引擎</a>
+            {% endif %}
+        </p>
+        <div class="form-group">
+            <label>App ID</label>
+            <input type="text" name="oceanengine_app_id" value="{{ settings.get('oceanengine_app_id', '') }}" placeholder="巨量引擎应用 ID">
+        </div>
+        <div class="form-group">
+            <label>App Secret</label>
+            <input type="text" name="oceanengine_app_secret" value="{{ settings.get('oceanengine_app_secret', '') }}" placeholder="巨量引擎应用密钥">
+        </div>
+        <div class="form-group">
+            <label>广告主 ID（Advertiser ID）</label>
+            <input type="text" name="oceanengine_advertiser_id" value="{{ settings.get('oceanengine_advertiser_id', '') }}" placeholder="广告主账户 ID，用于拉取报表">
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg">保存设置</button>
+    </form>
+</div>
+{% endblock %}

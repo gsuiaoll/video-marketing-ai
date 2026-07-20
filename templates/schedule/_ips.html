@@ -1,0 +1,69 @@
+    <h4 style="margin:0 0 4px"> 出镜IP人物</h4>
+    <form method="post" id="ip-form" action="/schedule/ip/new" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:8px">
+        <input type="hidden" name="ip_id" id="ip-id" value="">
+        <span style="font-size:11px;color:#999">所属商家</span>
+        <select name="merchant_id" id="ip-mid" style="width:150px" title="该IP属于哪个拍摄商家">{% for m in shooting_merchants %}<option value="{{ m.id }}">{{ m.name }}{% if m.linked_merchant_id %}（分厂）{% endif %}</option>{% endfor %}</select>
+        <input type="text" name="name" id="ip-name" placeholder="IP名称（如：老板、小玲）" style="width:140px" required>
+        <select id="ip-role-select" onchange="var v=this.value;var inp=document.getElementById('ip-role');if(v==='__custom__'){inp.style.display='';inp.value='';inp.focus()}else{inp.style.display='none';inp.value=v}" style="width:130px">
+            <option value="">角色（选填）</option><option>老板</option><option>合伙人</option><option>店长</option><option>主播</option><option>达人</option><option>厨师</option><option>员工</option><option value="__custom__">✏️ 自定义…</option></select>
+        <input type="text" name="role" id="ip-role" placeholder="手动输入角色" style="width:130px;display:none">
+        <input type="number" name="monthly_quota" id="ip-quota" value="25" min="0" style="width:70px" title="0=共享总公司配额">
+        <label style="font-size:11px;display:flex;align-items:center;gap:2px"><input type="checkbox" name="share_parent_quota" id="ip-share" value="1"> 共享总部配额</label>
+        <button type="submit" class="btn btn-sm btn-primary" id="ip-btn">+ 添加IP</button>
+        <button type="button" class="btn btn-sm" id="ip-cancel" style="display:none" onclick="cancelEditIP()">取消</button>
+    </form>
+    {% if all_ips %}
+    <div style="max-height:200px;overflow-y:auto;margin-top:8px">
+    <table class="table" style="font-size:12px;margin:0">
+        <thead><tr><th>所属商家</th><th>IP名称</th><th>角色</th><th>月配额</th><th>共享</th><th>操作</th></tr></thead>
+        <tbody>{% for m in shooting_merchants %}{% if not m.linked_merchant_id %}
+        {% set m_ips = merchant_ips.get(m.id, []) %}
+        {% if m_ips %}{% for ip in m_ips %}
+        <tr data-ip-id="{{ ip.id }}" data-ip-name="{{ ip.name }}" data-ip-role="{{ ip.role or '' }}" data-ip-mid="{{ ip.merchant_id }}" data-ip-quota="{{ ip.monthly_quota }}" data-ip-share="{{ ip.share_parent_quota }}">
+            <td><strong>{{ m.name }}</strong></td>
+            <td><strong>{{ ip.name }}</strong></td>
+            <td>{{ ip.role or '-' }}</td>
+            <td>{{ ip.monthly_quota }}条</td>
+            <td>{{ '是' if ip.share_parent_quota else '否' }}</td>
+            <td><a href="javascript:void(0)" onclick="editIPFrom(this)" class="btn btn-sm">✏️ 编辑</a> <a href="/schedule/ip/{{ ip.id }}/delete" class="btn btn-sm" style="color:#ff4d4f" onclick="return confirm('删除IP「{{ ip.name }}」？')">🗑 删除</a></td>
+        </tr>{% endfor %}{% endif %}
+        {% for child in shooting_merchants %}{% if child.linked_merchant_id == m.id %}
+        {% set c_ips = merchant_ips.get(child.id, []) %}
+        {% if c_ips %}{% for ip in c_ips %}
+        <tr style="background:#fafafa" data-ip-id="{{ ip.id }}" data-ip-name="{{ ip.name }}" data-ip-role="{{ ip.role or '' }}" data-ip-mid="{{ ip.merchant_id }}" data-ip-quota="{{ ip.monthly_quota }}" data-ip-share="{{ ip.share_parent_quota }}">
+            <td style="padding-left:20px;color:#999;font-size:12px">└ {{ child.name }} ← {{ m.name }}</td>
+            <td><strong>{{ ip.name }}</strong></td>
+            <td>{{ ip.role or '-' }}</td>
+            <td>{{ ip.monthly_quota }}条</td>
+            <td>{{ '是' if ip.share_parent_quota else '否' }}</td>
+            <td><a href="javascript:void(0)" onclick="editIPFrom(this)" class="btn btn-sm">✏️ 编辑</a> <a href="/schedule/ip/{{ ip.id }}/delete" class="btn btn-sm" style="color:#ff4d4f" onclick="return confirm('删除IP「{{ ip.name }}」？')">🗑 删除</a></td>
+        </tr>{% endfor %}{% endif %}
+        {% endif %}{% endfor %}
+        {% endif %}{% endfor %}</tbody>
+    </table></div>{% endif %}
+</div>
+
+
+
+<!-- ========== 今日未排班提醒 ========== -->
+{% if not has_today %}
+<div style="background:#fff7e6;border:1px solid #ffa940;border-radius:8px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px">
+    <span style="font-size:18px">⚠️</span>
+    <span style="flex:1;font-size:13px">今日（{{ today_str }}）尚未排班。{% if last_date %}上次排班截止 {{ last_date }}。{% endif %}</span>
+</div>
+{% endif %}
+
+<!-- ========== AI 排班 ========== -->
+<div class="card" style="margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:16px">
+        <form method="post" action="/schedule/generate" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" onsubmit="return doGenerate()">
+            <input type="hidden" name="photographer_id" id="gen-pid" value="{{ sel_pid }}">
+            <button type="submit" class="btn btn-primary" id="gen-btn" {% if not shooting_merchants %}disabled{% endif %} style="{% if not has_today %}animation:pulse 2s infinite{% endif %}">生成排班</button>
+            <span id="gen-loading" style="display:none;color:#1890ff;font-size:13px">⏳ 正在生成排班...</span>
+            <a href="/schedule/clear-past" class="btn btn-sm" style="color:#999" onclick="return confirm('清除今天之前的所有未完成任务？')">🧹 清理过期</a>
+        </form>
+        <span style="font-size:12px;color:#999">从今天起30天自动排班。手动添加的任务🔒锁定不会被覆盖。</span>
+    </div>
+</div>
+
+<!-- ========== 手动排班 ========== -->
