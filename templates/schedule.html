@@ -53,19 +53,17 @@
 <style>
 .sch-tab { padding:10px 20px; cursor:pointer; font-weight:600; font-size:14px; color:#999; border-bottom:2px solid transparent; display:inline-block; }
 .sch-tab.active { color:#1890ff; border-bottom-color:#1890ff; }
-.sch-panel { display:none; }
-.sch-panel.active { display:block; }
 </style>
 <div style="border-bottom:2px solid #f0f0f0;margin:16px 0 0 0">
     <span class="sch-tab active" onclick="showScheduleTab('forms',this)">📋 排班操作</span>
     <span class="sch-tab" onclick="showScheduleTab('merchants',this)">🏪 商家 & 出镜IP</span>
 </div>
 
-<div class="sch-panel active" id="sch-forms" style="padding-top:16px">
+<div id="sch-forms" style="padding-top:16px">
 {% include 'schedule/_forms.html' %}
 </div>
 
-<div class="sch-panel" id="sch-merchants" style="padding-top:16px">
+<div id="sch-merchants" style="display:none;padding-top:16px">
 {% include 'schedule/_photographers.html' %}
 {% include 'schedule/_merchants.html' %}
 {% include 'schedule/_ips.html' %}
@@ -78,8 +76,8 @@
 function showScheduleTab(name, el) {
     document.querySelectorAll('.sch-tab').forEach(function(t){t.classList.remove('active');});
     el.classList.add('active');
-    document.querySelectorAll('.sch-panel').forEach(function(p){p.classList.remove('active');});
-    document.getElementById('sch-'+name).classList.add('active');
+    document.getElementById('sch-forms').style.display = name === 'forms' ? '' : 'none';
+    document.getElementById('sch-merchants').style.display = name === 'merchants' ? '' : 'none';
 }
 </script>
 

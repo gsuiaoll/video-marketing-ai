@@ -1,18 +1,38 @@
-// ===== 摄影师 =====function showPgForm() {    document.getElementById('pg-form').style.display = 'block';    document.getElementById('show-pg-btn').style.display = 'none';    document.getElementById('pg-name').value = '';    document.getElementById('pg-phone').value = '';    document.getElementById('pg-id').value = '';    document.getElementById('pg-submit').textContent = '保存';    document.getElementById('pg-form-el').action = '/schedule/photographer/new';}function editPg(id, name, phone) {    document.getElementById('pg-form').style.display = 'block';    document.getElementById('show-pg-btn').style.display = 'none';    document.getElementById('pg-id').value = id;    document.getElementById('pg-name').value = name;    document.getElementById('pg-phone').value = phone || '';    document.getElementById('pg-submit').textContent = '保存修改';    document.getElementById('pg-form-el').action = '/schedule/photographer/' + id + '/edit';}var ALL_TASKS = [
-    {% for t in all_tasks %}
-    {
-        id: {{ t.id }},
-        date: '{{ t.scheduled_date }}',
-        slot: '{{ t.time_slot }}',
-        mid: {{ t.merchant_id }},
-        mname: '{{ (t.shooting_merchant.name if t.shooting_merchant else "")|e }}',
-        pid: {{ t.photographer_id or 0 }},
-        pname: '{{ (t.photographer.name if t.photographer else "")|e }}',
-        vcount: {{ t.video_count }},
-        status: '{{ t.status }}',
-        notes: '{{ (t.notes or "")|e }}'
-    },
-    {% endfor %}
+// ===== 摄影师 =====
+function showPgForm() {
+    document.getElementById('pg-form').style.display = 'block';
+    document.getElementById('show-pg-btn').style.display = 'none';
+    document.getElementById('pg-name').value = '';
+    document.getElementById('pg-phone').value = '';
+    document.getElementById('pg-id').value = '';
+    document.getElementById('pg-submit').textContent = '保存';
+    document.getElementById('pg-form-el').action = '/schedule/photographer/new';
+}
+function editPg(id, name, phone) {
+    document.getElementById('pg-form').style.display = 'block';
+    document.getElementById('show-pg-btn').style.display = 'none';
+    document.getElementById('pg-id').value = id;
+    document.getElementById('pg-name').value = name;
+    document.getElementById('pg-phone').value = phone || '';
+    document.getElementById('pg-submit').textContent = '保存修改';
+    document.getElementById('pg-form-el').action = '/schedule/photographer/' + id + '/edit';
+}
+
+var ALL_TASKS = [
+{% for t in all_tasks %}
+{
+    id: {{ t.id }},
+    date: '{{ t.scheduled_date }}',
+    slot: '{{ t.time_slot }}',
+    mid: {{ t.merchant_id }},
+    mname: '{{ (t.shooting_merchant.name if t.shooting_merchant else "")|e }}',
+    pid: {{ t.photographer_id or 0 }},
+    pname: '{{ (t.photographer.name if t.photographer else "")|e }}',
+    vcount: {{ t.video_count }},
+    status: '{{ t.status }}',
+    notes: '{{ (t.notes or "")|e }}'
+},
+{% endfor %}
 ];
 
 function searchExceptions() {
@@ -21,7 +41,6 @@ function searchExceptions() {
     var dateFrom = document.getElementById('ex-date-from').value;
     var dateTo = document.getElementById('ex-date-to').value;
     var status = document.getElementById('ex-status').value;
-
     var results = ALL_TASKS.filter(function(t) {
         if (mid && String(t.mid) !== mid) return false;
         if (pid && String(t.pid) !== pid) return false;
@@ -31,11 +50,9 @@ function searchExceptions() {
         if (status === 'cancelled' && t.status !== 'cancelled') return false;
         return true;
     });
-
     var tbody = document.getElementById('ex-tbody');
     var empty = document.getElementById('ex-empty');
     tbody.innerHTML = '';
-
     if (results.length === 0) {
         empty.style.display = '';
         document.getElementById('ex-actions').style.display = 'none';
@@ -43,25 +60,13 @@ function searchExceptions() {
         empty.style.display = 'none';
         document.getElementById('ex-actions').style.display = 'flex';
         results.forEach(function(t) {
-            var slotLabel = t.slot === 'morning' ? '🌅 上午' : t.slot === 'afternoon' ? '🌇 下午' : '🌤️ 全天';
-            var statusBadge = t.status === 'done'
-                ? '<span class="badge badge-blue">已完成</span>'
-                : t.status === 'cancelled'
-                ? '<span class="badge" style="background:#ff4d4f;color:#fff">已取消</span>'
-                : '<span class="badge badge-green">待拍</span>';
-            var rowStyle = t.status === 'cancelled' ? 'style="background:#fff2f0;opacity:0.7"' : '';
-            var cb = t.status !== 'cancelled' ? '<input type="checkbox" class="ex-cb" value="' + t.id + '">' : '';
-            tbody.innerHTML += '<tr ' + rowStyle + '>'
-                + '<td>' + cb + '</td>'
-                + '<td>' + t.date + '</td>'
-                + '<td>' + slotLabel + '</td>'
-                + '<td><strong>' + t.mname + '</strong></td>'
-                + '<td>' + (t.pname || '-') + '</td>'
-                + '<td>' + statusBadge + '</td>'
-                + '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:#999" title="' + t.notes + '">' + (t.notes || '-') + '</td>'
-                + '</tr>';
+            var slotLabel = t.slot === 'morning' ? '上午' : t.slot === 'afternoon' ? '下午' : '全天';
+            var statusBadge = t.status === 'done' ? '<span class=\"badge badge-blue\">已完成</span>' : t.status === 'cancelled' ? '<span class=\"badge\" style=\"background:#ff4d4f;color:#fff\">已取消</span>' : '<span class=\"badge badge-green\">待拍</span>';
+            var rowStyle = t.status === 'cancelled' ? 'style=\"background:#fff2f0;opacity:0.7\"' : '';
+            var cb = t.status !== 'cancelled' ? '<input type=\"checkbox\" class=\"ex-cb\" value=\"' + t.id + '\">' : '';
+            tbody.innerHTML += '<tr ' + rowStyle + '>' + '<td>' + cb + '</td>' + '<td>' + t.date + '</td>' + '<td>' + slotLabel + '</td>' + '<td>' + t.mname + '</td>' + '<td>' + (t.pname || '-') + '</td>' + '<td>' + statusBadge + '</td>' + '<td>' + (t.notes || '-') + '</td>' + '</tr>';
         });
-        document.getElementById('ex-count').textContent = '共 ' + results.length + ' 条';
+        document.getElementById('ex-count').textContent = results.length + ' 条';
     }
     document.getElementById('ex-results').style.display = '';
     document.getElementById('ex-select-all').checked = false;
@@ -74,37 +79,23 @@ function toggleExSelectAll(cb) {
 
 function batchCancelExceptions() {
     var ids = [];
-    document.querySelectorAll('.ex-cb:checked').forEach(function(cb) {
-        ids.push(cb.value);
-    });
+    document.querySelectorAll('.ex-cb:checked').forEach(function(cb) { ids.push(cb.value); });
     if (ids.length === 0) { alert('请先勾选要取消的排班'); return; }
     var reason = document.getElementById('ex-reason').value.trim();
     var msg = '确认取消 ' + ids.length + ' 条排班任务？';
-    if (reason) msg += '\n原因：' + reason;
+    if (reason) msg += '原因：' + reason;
     if (!confirm(msg)) return;
     var form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '/schedule/task/batch-cancel';
-    var i1 = document.createElement('input');
-    i1.type = 'hidden'; i1.name = 'task_ids'; i1.value = ids.join(',');
-    form.appendChild(i1);
-    var i2 = document.createElement('input');
-    i2.type = 'hidden'; i2.name = 'reason'; i2.value = reason;
-    form.appendChild(i2);
-    document.body.appendChild(form);
-    form.submit();
+    form.method = 'POST'; form.action = '/schedule/task/batch-cancel';
+    var i1 = document.createElement('input'); i1.type = 'hidden'; i1.name = 'task_ids'; i1.value = ids.join(','); form.appendChild(i1);
+    var i2 = document.createElement('input'); i2.type = 'hidden'; i2.name = 'reason'; i2.value = reason; form.appendChild(i2);
+    document.body.appendChild(form); form.submit();
 }
-// IP 编辑
+
+// ===== IP 编辑 =====
 function editIPFrom(el) {
     var tr = el.closest('tr');
-    editIP(
-        tr.getAttribute('data-ip-id'),
-        tr.getAttribute('data-ip-name'),
-        tr.getAttribute('data-ip-role'),
-        tr.getAttribute('data-ip-mid'),
-        tr.getAttribute('data-ip-quota'),
-        tr.getAttribute('data-ip-share')
-    );
+    editIP(tr.getAttribute('data-ip-id'), tr.getAttribute('data-ip-name'), tr.getAttribute('data-ip-role'), tr.getAttribute('data-ip-mid'), tr.getAttribute('data-ip-quota'), tr.getAttribute('data-ip-share'));
 }
 function editIP(id, name, role, mid, quota, share) {
     document.getElementById('ip-id').value = id;
@@ -112,19 +103,9 @@ function editIP(id, name, role, mid, quota, share) {
     var roleSelect = document.getElementById('ip-role-select');
     var roleInput = document.getElementById('ip-role');
     var presetRoles = ['老板','合伙人','店长','主播','达人','厨师','员工'];
-    if (presetRoles.indexOf(role) >= 0) {
-        roleSelect.value = role;
-        roleInput.style.display = 'none';
-        roleInput.value = '';
-    } else if (role) {
-        roleSelect.value = '__custom__';
-        roleInput.style.display = '';
-        roleInput.value = role;
-    } else {
-        roleSelect.value = '';
-        roleInput.style.display = 'none';
-        roleInput.value = '';
-    }
+    if (presetRoles.indexOf(role) >= 0) { roleSelect.value = role; roleInput.style.display = 'none'; roleInput.value = ''; }
+    else if (role) { roleSelect.value = '__custom__'; roleInput.style.display = ''; roleInput.value = role; }
+    else { roleSelect.value = ''; roleInput.style.display = 'none'; roleInput.value = ''; }
     document.getElementById('ip-mid').value = mid;
     document.getElementById('ip-quota').value = quota || 25;
     document.getElementById('ip-share').checked = (share == 1);
@@ -144,4 +125,76 @@ function cancelEditIP() {
     document.getElementById('ip-form').action = '/schedule/ip/new';
     document.getElementById('ip-cancel').style.display = 'none';
 }
-</script>
+
+// ===== 屏蔽和移动 =====
+function showBlock(date, slot) {
+    document.getElementById('block-date').value = date;
+    document.getElementById('block-slot').value = slot;
+    document.getElementById('block-date-label').textContent = date;
+    document.getElementById('block-slot-label').textContent = slot === 'morning' ? '上午' : '下午';
+    document.getElementById('block-popup').style.display = 'flex';
+}
+function showMove(id, date, slot, name) {
+    document.getElementById('move-form').action = '/schedule/task/' + id + '/move';
+    document.getElementById('move-date').value = date;
+    document.getElementById('move-slot').value = slot;
+    document.getElementById('move-name').textContent = name;
+    document.getElementById('move-popup').style.display = 'flex';
+}
+
+// ===== 生成排班 =====
+function doGenerate() {
+    if (!confirm('将重新生成未来30天排班，已有排班将被覆盖。确认？')) return false;
+    document.getElementById('gen-btn').disabled = true;
+    document.getElementById('gen-btn').textContent = '生成中...';
+    document.getElementById('gen-loading').style.display = 'inline';
+    return true;
+}
+
+// ===== 商家表单 =====
+function showAddForm() {
+    document.getElementById('add-form').style.display = 'block';
+    document.getElementById('show-add-btn').style.display = 'none';
+    document.getElementById('m-id').value = '';
+    document.getElementById('m-name').value = '';
+    document.getElementById('m-district').value = '';
+    document.getElementById('m-address').value = '';
+    document.getElementById('m-contact').value = '';
+    document.getElementById('m-quota').value = 25;
+    document.querySelectorAll('.pg-cb').forEach(function(cb) { cb.checked = false; });
+    document.getElementById('m-linked').value = '';
+    document.getElementById('m-submit').textContent = '保存';
+    document.getElementById('merchant-form').action = '/schedule/merchant/new';
+    updateQuotaHint();
+}
+function cancelForm() {
+    document.getElementById('add-form').style.display = 'none';
+    document.getElementById('show-add-btn').style.display = 'inline-block';
+}
+function updateQuotaHint() {
+    var linkedVal = document.getElementById('m-linked').value;
+    var hint = document.getElementById('quota-hint');
+    if (linkedVal) { hint.textContent = '（分厂配额，从总公司总额中分配）'; document.getElementById('m-quota').min = 0; }
+    else { hint.textContent = '（公司月总目标视频数）'; document.getElementById('m-quota').min = 5; }
+}
+document.getElementById('m-linked').addEventListener('change', updateQuotaHint);
+function editMerchant(id, name, district, contact, quota, address, linkedId, pgIds, needShooting) {
+    document.getElementById('add-form').style.display = 'block';
+    document.getElementById('show-add-btn').style.display = 'none';
+    document.getElementById('m-id').value = id;
+    document.getElementById('m-name').value = name;
+    document.getElementById('m-district').value = district;
+    document.getElementById('m-contact').value = contact;
+    document.getElementById('m-quota').value = quota;
+    document.getElementById('m-address').value = address || '';
+    document.getElementById('m-linked').value = linkedId || '';
+    document.querySelectorAll('.pg-cb').forEach(function(cb) { cb.checked = false; });
+    if (pgIds && pgIds.length > 0) { pgIds.forEach(function(pid) { var cb = document.querySelector('.pg-cb[value=\"' + pid + '\"]'); if (cb) cb.checked = true; }); }
+    var nsCb = document.getElementById('m-need-shooting');
+    var nsHi = document.getElementById('m-need-shooting-hidden');
+    nsCb.checked = (needShooting !== 0);
+    nsHi.value = nsCb.checked ? '1' : '0';
+    updateQuotaHint();
+    document.getElementById('m-submit').textContent = '保存修改';
+    document.getElementById('merchant-form').action = '/schedule/merchant/' + id + '/edit';
+}
