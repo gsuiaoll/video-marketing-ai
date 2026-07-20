@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}短视频管理{% endblock %}
+{% block content %}
+{% set qm = '&merchant_id=' ~ mid|string if mid else '' %}
+{% set qmall = '?merchant_id=' ~ mid|string if mid else '' %}
+
+<div class="page-header">
+    <h1>🎬 短视频管理</h1>
+</div>
+
+<!-- ====== 平台 Tab ====== -->
+<style>
+.platform-tab { padding:10px 20px; cursor:pointer; font-weight:600; font-size:14px; color:#999; border-bottom:2px solid transparent; display:inline-block; text-decoration:none; }
+.platform-tab.active { border-bottom-color: currentColor; }
+</style>
+<div style="border-bottom:2px solid #f0f0f0;margin-bottom:16px">
+    {% for p in platforms %}
+    <a href="/short-videos?platform={{ p.key }}{{ qm }}" class="platform-tab {% if current_platform == p.key %}active{% endif %}" style="{% if current_platform == p.key %}color:{{ p.color }};{% endif %}">{{ p.name }}</a>
+    {% endfor %}
+</div>
+
+<!-- ====== 商家筛选 + 操作栏 ====== -->
+<div class="card" style="margin-bottom:12px;padding:12px 16px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-size:12px;color:#666">商家筛选：</span>
+        <select onchange="location.href='?platform={{ current_platform }}&merchant_id='+this.value" style="width:auto;padding:4px 8px;font-size:12px">
+            <option value="">全部商家</option>
+            {% for m in merchants %}<option value="{{ m.id }}" {% if mid == m.id %}selected{% endif %}>{{ m.name }}</option>{% endfor %}
+        </select>
+
+        <span style="margin-left:auto;font-size:12px;color:#999">
+            {% if current_platform == 'douyin' %}
+            同步 {{ douyin_videos|length }} 条 + 本地 {{ local_videos|length }} 条
+            {% else %}
+            本地 {{ local_videos|length }} 条
+            {% endif %}
+        </span>
+    </div>
+</div>
+
+<!-- ====== 抖音特有：OAuth + 同步按钮 ====== -->
+{% if current_platform == 'douyin' %}
+<div class="card" style="margin-bottom:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-weight:600;font-size:14px">🔗 已授权账号：</span>
+    {% if douyin_accounts %}
+        {% for acc in douyin_accounts %}
+        <span style="background:#e6f7ff;padding:2px 10px;border-radius:4px;font-size:13px">🎵 {{ acc.account_name }}</span>
+        {% endfor %}
+        <a href="/douyin/videos/sync{{ qmall }}" class="btn btn-primary btn-sm">🔄 拉取视频数据</a>
+    {% else %}
+        <span style="color:#999;font-size:13px">未授权</span>
+    {% endif %}
+    <span style="margin-left:auto;font-size:12px;color:#999">在商家详情页 → 关联平台账号 → 选择抖音 OAuth 授权</span>
+</div>
+{% endif %}
+
+<!-- ====== 其他平台：连接提示 ====== -->
+{% if current_platform != 'douyin' and current_platform != 'redbook' %}
+<div class="card" style="margin-bottom:12px;padding:12px 16px;background:#fffbe6;border:1px solid #ffe58f">
+    <span style="font-size:13px">🔌 该平台尚未配置 API 接入。视频可通过本地上传管理，或前往 <a href="/merchants">商家详情页</a> 绑定平台账号。</span>
+</div>
+{% endif %}
+
+<!-- ====== 小红书：连接提示 ====== -->
+{% if current_platform == 'redbook' %}
+<div class="card" style="margin-bottom:12px;padding:12px 16px;background:#fffbe6;border:1px solid #ffe58f">
+    <span style="font-size:13px">📕 小红书开放平台接入开发中。视频可通过本地上传管理，或前往 <a href="/merchants">商家详情页</a> 绑定小红书账号。</span>
+</div>
+{% endif %}
+
+<!-- ====== 抖音 Webhook 同步视频（卡片） ====== -->
+{% if current_platform == 'douyin' and douyin_videos %}
+<div class="card" style="margin-bottom:16px">
+    <h4 style="margin:0 0 12px">📡 Webhook 实时同步</h4>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">
+    {% for v in douyin_videos %}
+    <div style="border:1px solid #f0f0f0;border-radius:8px;overflow:hidden">
+        {% if v.cover_url %}<img src="{{ v.cover_url }}" style="width:100%;height:140px;object-fit:cover" alt="">{% else %}<div style="width:100%;height:140px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;color:#ccc">无封面</div>{% endif %}
+        <div style="padding:8px 10px">
+            <strong style="font-size:13px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ v.title or '(无标题)' }}</strong>
+            <div style="display:flex;gap:12px;margin-top:6px;font-size:11px;color:#666">
+                <span>▶ {{ v.play_count or 0 }}</span><span>❤ {{ v.like_count or 0 }}</span><span>💬 {{ v.comment_count or 0 }}</span>
+            </div>
+            <div style="margin-top:6px;font-size:10px;color:#999;display:flex;justify-content:space-between;align-items:center">
+                <span>{{ v.created_at.strftime('%m-%d %H:%M') if v.created_at else '' }}</span>
+                <span>
+                    <a href="/douyin/videos/{{ v.id }}/jump{{ qmall }}" target="_blank" class="btn btn-sm" style="font-size:10px">🔗 跳转</a>
+                    <a href="/douyin/videos/{{ v.id }}/forward{{ qmall }}" class="btn btn-sm" style="font-size:10px;color:#fe2c55">📤 转发</a>
+                    <a href="/douyin/videos/{{ v.id }}/delete{{ qmall }}" style="color:#ff4d4f;margin-left:4px" onclick="return confirm('删除？')">✕</a>
+                </span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- ====== 本地上传视频列表 ====== -->
+{% if local_videos %}
+<table class="table" style="font-size:13px">
+    <thead><tr>
+        <th>标题</th><th>商家</th><th>平台</th><th>描述</th><th>标签</th><th>发布</th><th>时间</th><th>操作</th>
+    </tr></thead><tbody>
+    {% for v in local_videos %}
+    {% set plats = {'douyin':'🎵抖音','shipinhao':'📺视频号','tiktok':'🌍TikTok','redbook':'📕小红书','facebook':'📘Facebook'} %}
+    <tr>
+        <td><strong>{{ v.title }}</strong></td>
+        <td>{{ v.merchant.name if v.merchant else '-' }}</td>
+        <td>{{ plats.get(v.platform, v.platform or '-') }}</td>
+        <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#666">{{ v.description or '-' }}</td>
+        <td style="font-size:11px;color:#666">{{ v.tags or '-' }}</td>
+        <td>{% if v.publish_status %}<span class="badge badge-green">✓ 已发布</span>{% else %}<span class="badge badge-yellow">待发布</span>{% endif %}</td>
+        <td style="font-size:11px;color:#999">{{ v.created_at.strftime('%m-%d %H:%M') if v.created_at else '' }}</td>
+        <td style="white-space:nowrap">
+            <a href="/videos/play/{{ v.id }}" target="_blank" class="btn btn-sm">播放</a>
+            <a href="/videos/{{ v.id }}/publish{{ qmall }}" class="btn btn-sm {{ 'btn-primary' if not v.publish_status else '' }}">{{ '取消发布' if v.publish_status else '✓ 发布' }}</a>
+            <a href="/videos/{{ v.id }}/delete{{ qmall }}" class="btn btn-sm" style="color:#ff4d4f" onclick="return confirm('确认删除？')">删除</a>
+        </td>
+    </tr>{% endfor %}
+    </tbody></table>
+{% elif not douyin_videos %}
+<div class="empty-state"><p>暂无视频</p><p style="color:#999;font-size:12px">上传视频或连接平台账号后，视频会显示在这里</p></div>
+{% endif %}
+
+{% if current_platform == 'douyin' %}
+<div style="margin-top:20px;padding:12px;background:#fff3cd;border-radius:6px">
+    <strong>📌 Webhook 配置说明：</strong><br>
+    <span style="font-size:12px">在抖音开放平台 → 应用设置 → Webhook 地址填入：<code>https://doze-unlatch-refrain.ngrok-free.dev/douyin/webhook/video</code>，事件类型勾选「视频发布」</span>
+</div>
+{% endif %}
+{% endblock %}

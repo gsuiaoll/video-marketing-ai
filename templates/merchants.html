@@ -14,6 +14,9 @@
             <th>商家名称</th>
             <th>区域</th>
             <th>行业</th>
+            <th>出镜IP</th>
+            <th>短视频账号</th>
+            <th>投流账号</th>
             <th>拍摄</th>
             <th>亮点摘要</th>
             <th>月配额</th>
@@ -32,6 +35,12 @@
             <td><a href="/merchants/{{ m.id }}"><strong>{{ m.name }}</strong></a></td>
             <td>{{ m.district or '-' }}</td>
             <td>{{ m.industry or '-' }}</td>
+            {% set ips = merchant_ip_map.get(m.id, []) %}
+            <td style="font-size:12px">{% if ips %}{% for ipname in ips %}<span style="background:#e6f7ff;padding:1px 6px;border-radius:3px;margin-right:3px;white-space:nowrap">👤 {{ ipname }}</span>{% endfor %}{% else %}-{% endif %}</td>
+            {% set plats = merchant_platforms.get(m.id, []) %}
+            <td style="font-size:12px">{% if plats %}{% for pname, pcnt in plats %}<span style="background:#f6ffed;padding:1px 6px;border-radius:3px;margin-right:3px;white-space:nowrap">{{ pname }}×{{ pcnt }}</span>{% endfor %}{% else %}-{% endif %}</td>
+            {% set ads = merchant_ads.get(m.id, []) %}
+            <td style="font-size:12px">{% if ads %}{% for aname, acnt in ads %}<span style="background:#fff7e6;padding:1px 6px;border-radius:3px;margin-right:3px;white-space:nowrap">{{ aname }}×{{ acnt }}</span>{% endfor %}{% else %}-{% endif %}</td>
             <td style="text-align:center">{% if m.need_shooting is none or m.need_shooting == 1 %}✅{% else %}❌{% endif %}</td>
             <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#666" title="{{ m.products_dishes or '' }}">
                 {{ summary[0] if summary else '-' }}
@@ -65,6 +74,12 @@
             <td style="padding-left:24px"><span style="color:#999">└</span> <a href="/merchants/{{ child.id }}">{{ child.name }}</a> <span style="color:#999;font-size:11px">← {{ m.name }}</span></td>
             <td>{{ child.district or '-' }}</td>
             <td>{{ child.industry or '-' }}</td>
+            {% set c_ips = merchant_ip_map.get(child.id, []) %}
+            <td style="font-size:12px">{% if c_ips %}{% for ipname in c_ips %}<span style="background:#e6f7ff;padding:1px 6px;border-radius:3px;margin-right:3px;white-space:nowrap">👤 {{ ipname }}</span>{% endfor %}{% else %}-{% endif %}</td>
+            {% set c_plats = merchant_platforms.get(child.id, []) %}
+            <td style="font-size:12px">{% if c_plats %}{% for pname, pcnt in c_plats %}<span style="background:#f6ffed;padding:1px 6px;border-radius:3px;margin-right:3px;white-space:nowrap">{{ pname }}×{{ pcnt }}</span>{% endfor %}{% else %}-{% endif %}</td>
+            {% set c_ads = merchant_ads.get(child.id, []) %}
+            <td style="font-size:12px">{% if c_ads %}{% for aname, acnt in c_ads %}<span style="background:#fff7e6;padding:1px 6px;border-radius:3px;margin-right:3px;white-space:nowrap">{{ aname }}×{{ acnt }}</span>{% endfor %}{% else %}-{% endif %}</td>
             <td style="text-align:center">{% if child.need_shooting is none or child.need_shooting == 1 %}✅{% else %}❌{% endif %}</td>
             <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#666" title="{{ child.products_dishes or '' }}">
                 {{ csummary[0] if csummary else '-' }}

@@ -8,7 +8,7 @@
     <div style="display:flex;align-items:center;gap:12px">
         <span class="badge {% if cs_mode == 'ai' %}badge-green{% else %}badge-yellow{% endif %}">{{ 'AI在线' if cs_mode == 'ai' else 'Mock降级' }}</span>
         <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
-            <select onchange="var url=new URL(location);url.searchParams.set('merchant_id',this.value);location.href=url" style="width:auto;padding:4px 8px;font-size:12px;border-radius:4px">
+            <select onchange="var url=new URL(location);url.searchParams.set('merchant_id',this.value);location.href=url" style="width:auto;padding:4px 8px;font-size:12px;border-radius:6px">
                 <option value="">全部商家</option>{% for m in merchants %}<option value="{{ m.id }}" {% if request.query_params.get('merchant_id')|int == m.id %}selected{% endif %}>{{ m.name }}</option>{% endfor %}</select>
             <a href="{{ '?merchant_id=' ~ mid if mid else '?' }}" class="btn btn-sm {{ 'btn-primary' if not request.query_params.get('platform') else '' }}">全部</a>
             <a href="?platform=douyin{{ qm }}" class="btn btn-sm {{ 'btn-primary' if request.query_params.get('platform') == 'douyin' else '' }}">抖音</a>

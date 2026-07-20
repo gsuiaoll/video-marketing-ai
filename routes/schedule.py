@@ -259,8 +259,12 @@ def schedule_view(request: Request, db: Session = Depends(get_db)):
         task_query = task_query.filter(ShootingTask.photographer_id == sel_pid)
     tasks = task_query.order_by(ShootingTask.scheduled_date).all()
 
-    # 检查今天是否有排班
+    # 今天和明天
     today_str = today.strftime("%Y-%m-%d")
+    from datetime import timedelta
+    tomorrow_str = (today + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    # 检查今天是否有排班
     has_today = db.query(ShootingTask).filter(
         ShootingTask.scheduled_date == today_str,
         ShootingTask.status != "cancelled"
@@ -345,6 +349,7 @@ def schedule_view(request: Request, db: Session = Depends(get_db)):
         "has_today": has_today,
         "last_date": last_date,
         "today_str": today_str,
+        "tomorrow_str": tomorrow_str,
         "locked_tasks": locked_tasks,
         "all_ips": all_ips,
         "merchant_ips": merchant_ips,
@@ -488,23 +493,32 @@ async def do_generate(request: Request, db: Session = Depends(get_db)):
             "time_slot": lt.time_slot,
         })
 
-    # 4. 在锁定任务基础上生成排班（填空）
+    # 4. 构建 IP 映射（商家 → IP ID 列表），供排班算法轮转分配
+    all_ips = db.query(ShootingIP).filter(ShootingIP.status == "active").all()
+    merchant_ip_map = {}
+    for ip in all_ips:
+        merchant_ip_map.setdefault(ip.merchant_id, []).append(ip.id)
+
+    # 5. 在锁定任务基础上生成排班（填空）
     result = generate_schedule(merchant_data, today.year, today.month,
                                 start_day=today.day, blocked=blocked,
                                 end_date=end_date.strftime("%Y-%m-%d"),
-                                locked_tasks=locked_map)
+                                locked_tasks=locked_map,
+                                merchant_ips=merchant_ip_map)
 
-    # 5. 保存所有任务
+    # 6. 保存所有任务
     for day_plan in result:
         for task in day_plan.get("tasks", []):
             mid = task.get("merchant_id", 0)
             pg_id = task.get("photographer_id")
+            ip_id = task.get("ip_id")
             if not mid:
                 continue
             if sel_pid > 0 and pg_id != sel_pid:
                 continue
             db.add(ShootingTask(
                 merchant_id=mid, photographer_id=pg_id,
+                ip_id=ip_id,
                 scheduled_date=day_plan["date"],
                 time_slot=task.get("time_slot", "morning"),
                 video_count=task.get("video_count", 2),
@@ -652,14 +666,21 @@ async def add_or_edit_ip(request: Request, db: Session = Depends(get_db)):
             ip.monthly_quota = int(form.get("monthly_quota", str(ip.monthly_quota or 25)))
             ip.share_parent_quota = 1 if form.get("share_parent_quota") == "1" else 0
     else:
-        # 新增模式
-        db.add(ShootingIP(
-            merchant_id=int(form.get("merchant_id", 0)),
-            name=form.get("name", ""),
-            role=form.get("role", ""),
-            monthly_quota=int(form.get("monthly_quota", "25")),
-            share_parent_quota=1 if form.get("share_parent_quota") == "1" else 0,
-        ))
+        # 新增模式 — 防止同名+同商家重复
+        name = form.get("name", "").strip()
+        mid = int(form.get("merchant_id", 0))
+        exists = db.query(ShootingIP).filter(
+            ShootingIP.merchant_id == mid,
+            ShootingIP.name == name,
+            ShootingIP.status == "active"
+        ).first()
+        if not exists and name:
+            db.add(ShootingIP(
+                merchant_id=mid, name=name,
+                role=form.get("role", ""),
+                monthly_quota=int(form.get("monthly_quota", "25")),
+                share_parent_quota=1 if form.get("share_parent_quota") == "1" else 0,
+            ))
     db.commit()
     return RedirectResponse(url="/schedule", status_code=302)
 

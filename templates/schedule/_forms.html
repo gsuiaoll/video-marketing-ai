@@ -1,47 +1,26 @@
-<!-- ========== 今日未排班提醒 ========== -->
-{% if not has_today %}
-<div style="background:#fff7e6;border:1px solid #ffa940;border-radius:8px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px">
-    <span style="font-size:18px">⚠️</span>
-    <span style="flex:1;font-size:13px">今日（{{ today_str }}）尚未排班。{% if last_date %}上次排班截止 {{ last_date }}。{% endif %}</span>
-</div>
-{% endif %}
-
-<!-- ========== AI 排班 ========== -->
-<div class="card" style="margin-bottom:12px">
-    <div style="display:flex;align-items:center;gap:16px">
-        <form method="post" action="/schedule/generate" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" onsubmit="return doGenerate()">
-            <input type="hidden" name="photographer_id" id="gen-pid" value="{{ sel_pid }}">
-            <button type="submit" class="btn btn-primary" id="gen-btn" {% if not shooting_merchants %}disabled{% endif %} style="{% if not has_today %}animation:pulse 2s infinite{% endif %}">生成排班</button>
-            <span id="gen-loading" style="display:none;color:#1890ff;font-size:13px">⏳ 正在生成排班...</span>
-            <a href="/schedule/clear-past" class="btn btn-sm" style="color:#999" onclick="return confirm('清除今天之前的所有未完成任务？')">🧹 清理过期</a>
-        </form>
-        <span style="font-size:12px;color:#999">从今天起30天自动排班。手动添加的任务🔒锁定不会被覆盖。</span>
-    </div>
-</div>
-
 <!-- ========== 手动排班 ========== -->
 <div class="card" style="margin-top:12px;background:#fffbe6;border:1px solid #ffe58f">
     <h4 style="margin:0 0 8px">✋ 手动排班（锁定后生成时不覆盖）</h4>
     <form method="post" action="/schedule/task/new" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
-        <div class="form-group" style="margin:0"><label style="font-size:11px">商家</label>
+        <div class="form-group" style="margin:0"><label style="font-size:12px">商家</label>
             <select name="merchant_id" style="min-width:130px">{% for m in shooting_merchants %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}</select></div>
-        <div class="form-group" style="margin:0"><label style="font-size:11px">摄影师</label>
+        <div class="form-group" style="margin:0"><label style="font-size:12px">摄影师</label>
             <select name="photographer_id" style="min-width:100px">{% for p in photographers %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}</select></div>
-        <div class="form-group" style="margin:0"><label style="font-size:11px">日期</label><input type="date" name="date" value="{{ today_str }}" style="width:130px"></div>
-        <div class="form-group" style="margin:0"><label style="font-size:11px">出镜IP</label>
+        <div class="form-group" style="margin:0"><label style="font-size:12px">日期</label><input type="date" name="date" value="{{ today_str }}" style="width:130px"></div>
+        <div class="form-group" style="margin:0"><label style="font-size:12px">出镜IP</label>
             <select name="ip_id" style="min-width:100px"><option value="">不限</option>{% for ip in all_ips %}<option value="{{ ip.id }}">{{ ip.name }}</option>{% endfor %}</select></div>
-        <div class="form-group" style="margin:0"><label style="font-size:11px">时段</label>
+        <div class="form-group" style="margin:0"><label style="font-size:12px">时段</label>
             <select name="time_slot" style="width:100px" onchange="var vc=document.getElementById('m-video-count');vc.value=this.value==='full_day'?4:2"><option value="morning">上午</option><option value="afternoon">下午</option><option value="full_day">全天</option></select></div>
-        <div class="form-group" style="margin:0"><label style="font-size:11px">视频数</label><input type="number" name="video_count" id="m-video-count" value="2" min="1" style="width:60px"></div>
-        <button type="submit" class="btn btn-sm" style="background:#faad14;color:#fff;border-color:#faad14">🔒 添加锁定</button>
+        <div class="form-group" style="margin:0"><label style="font-size:12px">视频数</label><input type="number" name="video_count" id="m-video-count" value="2" min="1" style="width:60px"></div>
+        <button type="submit" class="btn btn-sm" class="btn btn-sm btn-warning">🔒 添加锁定</button>
     </form>
     {% if locked_tasks %}
-    <div style="margin-top:12px;max-height:200px;overflow-y:auto">
+    <div style="margin-top:12px">
     <table class="table" style="font-size:12px;margin:0">
-        <thead><tr><th>日期</th><th>时段</th><th>商家</th><th>摄影师</th><th>视频数</th><th>操作</th></tr></thead>
+        <thead><tr><th>日期</th><th>时段</th><th>商家</th><th>出镜IP</th><th>摄影师</th><th>视频数</th><th>操作</th></tr></thead>
         <tbody>{% for t in locked_tasks %}
         <tr>
-            <td>{{ t.scheduled_date }}</td><td>{{ {'morning':'上午','afternoon':'下午','full_day':'全天'}.get(t.time_slot, t.time_slot) }}</td>
+            <td>{{ t.scheduled_date }}{% if t.scheduled_date == today_str %} <span style="background:#1890ff;color:#fff;padding:0 3px;border-radius:2px;font-size:10px">今天</span>{% elif t.scheduled_date == tomorrow_str %} <span style="background:#52c41a;color:#fff;padding:0 3px;border-radius:2px;font-size:10px">明天</span>{% endif %}</td><td>{{ {'morning':'上午','afternoon':'下午','full_day':'全天'}.get(t.time_slot, t.time_slot) }}</td>
             <td>{{ t.shooting_merchant.name if t.shooting_merchant else t.merchant_id }}</td>
             <td>{{ t.ip.name if t.ip else '-' }}</td>
             <td>{{ t.photographer.name if t.photographer else '-' }}</td>
@@ -55,7 +34,7 @@
 
 <!-- 屏蔽时段弹窗 -->
 <div id="block-popup" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:999;justify-content:center;align-items:center">
-    <div style="background:#fff;border-radius:12px;padding:24px;min-width:320px;box-shadow:0 8px 24px rgba(0,0,0,0.15)">
+    <div style="background:#fff;border-radius:8px;padding:24px;min-width:320px;box-shadow:0 8px 24px rgba(0,0,0,0.15)">
         <h4 style="margin:0 0 16px">🔒 屏蔽时间段 — <span id="block-date-label"></span> <span id="block-slot-label"></span></h4>
         <form method="post" action="/schedule/block">
             <input type="hidden" name="date" id="block-date">
@@ -70,7 +49,7 @@
             </div>
             <div style="display:flex;gap:8px;justify-content:flex-end">
                 <button type="button" class="btn btn-sm" onclick="document.getElementById('block-popup').style.display='none'">取消</button>
-                <button type="submit" class="btn btn-primary btn-sm" style="background:#ff4d4f;border-color:#ff4d4f">确认屏蔽</button>
+                <button type="submit" class="btn btn-primary btn-sm" class="btn btn-primary btn-sm btn-danger">确认屏蔽</button>
             </div>
         </form>
     </div>
@@ -78,7 +57,7 @@
 
 <!-- 移动任务弹窗 -->
 <div id="move-popup" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:999;justify-content:center;align-items:center">
-    <div style="background:#fff;border-radius:12px;padding:24px;min-width:320px;box-shadow:0 8px 24px rgba(0,0,0,0.15)">
+    <div style="background:#fff;border-radius:8px;padding:24px;min-width:320px;box-shadow:0 8px 24px rgba(0,0,0,0.15)">
         <h4 style="margin:0 0 16px">↔️ 调整排班 — <span id="move-name"></span></h4>
         <form method="post" id="move-form">
             <div class="form-group">
@@ -102,24 +81,34 @@
 </div>
 
 <!-- ========== 临时加拍 ========== -->
-<div style="background:#fff;border-radius:12px;padding:24px;margin-top:24px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+<div style="background:#fff;border-radius:8px;padding:24px;margin-top:24px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">
     <h3 style="margin:0 0 8px">➕ 临时加拍（摄影师提前完成，加一趟）</h3>
-    <p style="color:#999;font-size:13px;margin:0 0 12px">摄影师当天提前拍完了，临时多排一家，记录原因。</p>
-    <form method="post" action="/schedule/task/new" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
-        <select name="merchant_id" style="min-width:130px">{% for m in shooting_merchants %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}</select>
-        <select name="photographer_id" style="min-width:100px">{% for p in photographers %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}</select>
-        <select name="ip_id" style="min-width:100px"><option value="">不限IP</option>{% for ip in all_ips %}<option value="{{ ip.id }}">{{ ip.name }}</option>{% endfor %}</select>
-        <input type="date" name="date" value="{{ today_str }}" style="width:130px">
-        <select name="time_slot" style="width:90px" onchange="var v=document.getElementById('ex-vc2');v.value=this.value==='full_day'?4:2"><option value="morning">上午</option><option value="afternoon">下午</option><option value="full_day">全天</option></select>
-        <input type="number" name="video_count" id="ex-vc2" value="2" min="1" style="width:55px">
-        <input type="text" name="notes" placeholder="加拍原因" style="width:150px">
+    <p style="color:#999;font-size:13px;margin:0 0 16px">摄影师当天提前拍完了，临时多排一家，记录原因。</p>
+    <form method="post" action="/schedule/task/new" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+        <div class="form-group" style="margin:0"><label style="font-size:12px">商家</label>
+        <select name="merchant_id" style="min-width:130px">{% for m in shooting_merchants %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}</select></div>
+        <div class="form-group" style="margin:0"><label style="font-size:12px">摄影师</label>
+        <select name="photographer_id" style="min-width:100px">{% for p in photographers %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}</select></div>
+        <div class="form-group" style="margin:0"><label style="font-size:12px">出镜IP</label>
+        <select name="ip_id" style="min-width:100px"><option value="">不限IP</option>{% for ip in all_ips %}<option value="{{ ip.id }}">{{ ip.name }}</option>{% endfor %}</select></div>
+        <div class="form-group" style="margin:0"><label style="font-size:12px">日期</label>
+        <div style="display:flex;gap:4px;align-items:center">
+        <input type="date" name="date" id="extra-date" value="{{ today_str }}" style="width:130px">
+        <button type="button" class="btn btn-sm" style="font-size:10px;padding:2px 6px;white-space:nowrap" onclick="document.getElementById('extra-date').value='{{ today_str }}'">今天</button>
+        <button type="button" class="btn btn-sm" style="font-size:10px;padding:2px 6px;white-space:nowrap" onclick="document.getElementById('extra-date').value='{{ tomorrow_str }}'">明天</button></div></div>
+        <div class="form-group" style="margin:0"><label style="font-size:12px">时段</label>
+        <select name="time_slot" style="width:90px" onchange="var v=document.getElementById('ex-vc2');v.value=this.value==='full_day'?4:2"><option value="morning">上午</option><option value="afternoon">下午</option><option value="full_day">全天</option></select></div>
+        <div class="form-group" style="margin:0"><label style="font-size:12px">视频数</label>
+        <input type="number" name="video_count" id="ex-vc2" value="2" min="1" style="width:60px"></div>
+        <div class="form-group" style="margin:0"><label style="font-size:12px">加拍原因</label>
+        <input type="text" name="notes" placeholder="如：客户临时加单、素材不够…" style="width:160px"></div>
         <input type="hidden" name="locked" value="1">
         <button type="submit" class="btn btn-sm btn-primary">➕ 加拍</button>
     </form>
 </div>
 
 <!-- 特殊情况处理面板 -->
-<div style="background:#fff;border-radius:12px;padding:24px;margin-top:16px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+<div style="background:#fff;border-radius:8px;padding:24px;margin-top:16px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">
     <h3 style="margin:0 0 8px">⚠️ 取消排班（商家变卦 / 摄影师来不了）</h3>
     <p style="color:#999;font-size:13px;margin:0 0 16px">筛选出要取消的任务，勾选后填写取消原因再执行。</p>
 
@@ -168,7 +157,7 @@
             <label style="font-size:12px">取消原因（选填）</label>
             <input type="text" id="ex-reason" placeholder="如：客户临时取消、摄影师请假…" style="width:100%">
         </div>
-        <button class="btn btn-sm" style="background:#ff4d4f;color:#fff;border-color:#ff4d4f;white-space:nowrap" onclick="batchCancelExceptions()">🚫 取消选中排班</button>
+        <button class="btn btn-sm" class="btn btn-sm btn-danger" style="white-space:nowrap" onclick="batchCancelExceptions()">🚫 取消选中排班</button>
         <span id="ex-count" style="font-size:12px;color:#999"></span>
     </div>
 
@@ -194,7 +183,7 @@
 
 <!-- ========== 排班历史记录 ========== -->
 {% if done_tasks %}
-<div style="background:#fff;border-radius:12px;padding:24px;margin-top:16px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+<div style="background:#fff;border-radius:8px;padding:24px;margin-top:16px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">
     <h3 style="margin:0 0 8px">📋 排班历史记录（近30天已完成）</h3>
     <div style="max-height:300px;overflow-y:auto">
     <table class="table" style="font-size:12px">
@@ -205,7 +194,7 @@
             <td>{{ dt.shooting_merchant.name if dt.shooting_merchant else dt.merchant_id }}</td>
             <td>{{ dt.photographer.name if dt.photographer else '-' }}</td>
             <td>{{ dt.video_count }}</td>
-            <td style="font-size:11px;color:#999">{{ dt.notes or '' }}</td>
+            <td style="font-size:12px;color:#999">{{ dt.notes or '' }}</td>
         </tr>{% endfor %}</tbody>
     </table></div>
 </div>

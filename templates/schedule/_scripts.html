@@ -64,7 +64,10 @@ function searchExceptions() {
             var statusBadge = t.status === 'done' ? '<span class=\"badge badge-blue\">已完成</span>' : t.status === 'cancelled' ? '<span class=\"badge\" style=\"background:#ff4d4f;color:#fff\">已取消</span>' : '<span class=\"badge badge-green\">待拍</span>';
             var rowStyle = t.status === 'cancelled' ? 'style=\"background:#fff2f0;opacity:0.7\"' : '';
             var cb = t.status !== 'cancelled' ? '<input type=\"checkbox\" class=\"ex-cb\" value=\"' + t.id + '\">' : '';
-            tbody.innerHTML += '<tr ' + rowStyle + '>' + '<td>' + cb + '</td>' + '<td>' + t.date + '</td>' + '<td>' + slotLabel + '</td>' + '<td>' + t.mname + '</td>' + '<td>' + (t.pname || '-') + '</td>' + '<td>' + statusBadge + '</td>' + '<td>' + (t.notes || '-') + '</td>' + '</tr>';
+            var dateLabel = '';
+            if (t.date === TODAY) dateLabel = ' <span style=\"background:#1890ff;color:#fff;padding:0 3px;border-radius:2px;font-size:10px\">今天</span>';
+            else if (t.date === TOMORROW) dateLabel = ' <span style=\"background:#52c41a;color:#fff;padding:0 3px;border-radius:2px;font-size:10px\">明天</span>';
+            tbody.innerHTML += '<tr ' + rowStyle + '>' + '<td>' + cb + '</td>' + '<td>' + t.date + dateLabel + '</td>' + '<td>' + slotLabel + '</td>' + '<td>' + t.mname + '</td>' + '<td>' + (t.pname || '-') + '</td>' + '<td>' + statusBadge + '</td>' + '<td>' + (t.notes || '-') + '</td>' + '</tr>';
         });
         document.getElementById('ex-count').textContent = results.length + ' 条';
     }
@@ -98,6 +101,7 @@ function editIPFrom(el) {
     editIP(tr.getAttribute('data-ip-id'), tr.getAttribute('data-ip-name'), tr.getAttribute('data-ip-role'), tr.getAttribute('data-ip-mid'), tr.getAttribute('data-ip-quota'), tr.getAttribute('data-ip-share'));
 }
 function editIP(id, name, role, mid, quota, share) {
+    document.getElementById('ip-form-card').style.display = 'block';
     document.getElementById('ip-id').value = id;
     document.getElementById('ip-name').value = name;
     var roleSelect = document.getElementById('ip-role-select');
@@ -114,6 +118,7 @@ function editIP(id, name, role, mid, quota, share) {
     document.getElementById('ip-cancel').style.display = '';
 }
 function cancelEditIP() {
+    document.getElementById('ip-form-card').style.display = 'none';
     document.getElementById('ip-id').value = '';
     document.getElementById('ip-name').value = '';
     document.getElementById('ip-role-select').value = '';

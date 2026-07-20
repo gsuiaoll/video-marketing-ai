@@ -10,7 +10,7 @@
         {% set date_key = '%d-%02d-%02d' % (year, month, day) if day > 0 else '' %}
         <div class="cal-cell {% if day == 0 %}cal-empty{% endif %} {% if date_key == today_str %}cal-today{% endif %}">
             {% if day > 0 %}
-            <div class="cal-date">{{ day }}</div>
+            <div class="cal-date">{{ day }}{% if date_key == today_str %} <span style="background:#1890ff;color:#fff;padding:0 4px;border-radius:2px;font-size:10px">今天</span>{% elif date_key == tomorrow_str %} <span style="background:#52c41a;color:#fff;padding:0 4px;border-radius:2px;font-size:10px">明天</span>{% endif %}</div>
             <div class="cal-tasks">
                 {% set am_tasks = am_map.get(date_key, []) %}
                 {% set am_blocked = [] %}
@@ -23,8 +23,8 @@
                 <div class="cal-slot slot-am {% if am_task.status == 'done' %}slot-done{% endif %}"
                      onclick="showMove({{ am_task.id }}, '{{ am_task.scheduled_date }}', '{{ am_task.time_slot }}', '{{ am_task.shooting_merchant.name if am_task.shooting_merchant else '' }}')" title="点击调整">
                     <span class="task-slot">{{ '🌤️' if am_task.time_slot == 'full_day' else '🌅' }}</span>
-                    <span class="task-name">{{ am_task.shooting_merchant.name if am_task.shooting_merchant else '#' ~ am_task.merchant_id }}</span>
-                    <span class="task-pg">{{ am_task.photographer.name if am_task.photographer else '' }}{% if am_task.ip %} {{ am_task.ip.name }}{% endif %}</span>
+                    <span class="task-name">{{ am_task.shooting_merchant.name if am_task.shooting_merchant else '#' ~ am_task.merchant_id }}{% if am_task.ip %} · {{ am_task.ip.name }}{% endif %}</span>
+                    <span class="task-pg">{{ am_task.photographer.name if am_task.photographer else '' }}</span>
                     <span class="task-status" onclick="event.stopPropagation()">
                         {% if am_task.locked %}🔒{% endif %}<a href="/schedule/task/{{ am_task.id }}/done" class="task-action" title="完成">✅</a>
                         <a href="/schedule/task/{{ am_task.id }}/delete" class="task-action" title="删除" onclick="return confirm('确认删除该排班？')">❌</a>
@@ -47,8 +47,8 @@
                 <div class="cal-slot slot-pm {% if pm_task.status == 'done' %}slot-done{% endif %}"
                      onclick="showMove({{ pm_task.id }}, '{{ pm_task.scheduled_date }}', '{{ pm_task.time_slot }}', '{{ pm_task.shooting_merchant.name if pm_task.shooting_merchant else '' }}')" title="点击调整">
                     <span class="task-slot">{{ '🌤️' if pm_task.time_slot == 'full_day' else '🌇' }}</span>
-                    <span class="task-name">{{ pm_task.shooting_merchant.name if pm_task.shooting_merchant else '#' ~ pm_task.merchant_id }}</span>
-                    <span class="task-pg">{{ pm_task.photographer.name if pm_task.photographer else '' }}{% if pm_task.ip %} {{ pm_task.ip.name }}{% endif %}</span>
+                    <span class="task-name">{{ pm_task.shooting_merchant.name if pm_task.shooting_merchant else '#' ~ pm_task.merchant_id }}{% if pm_task.ip %} · {{ pm_task.ip.name }}{% endif %}</span>
+                    <span class="task-pg">{{ pm_task.photographer.name if pm_task.photographer else '' }}</span>
                     <span class="task-status" onclick="event.stopPropagation()">
                         {% if pm_task.locked %}🔒{% endif %}<a href="/schedule/task/{{ pm_task.id }}/done" class="task-action" title="完成">✅</a>
                         <a href="/schedule/task/{{ pm_task.id }}/delete" class="task-action" title="删除" onclick="return confirm('确认删除该排班？')">❌</a>
@@ -65,8 +65,8 @@
                 <div class="cal-slot slot-fd {% if task.status == 'done' %}slot-done{% endif %}"
                      onclick="showMove({{ task.id }}, '{{ task.scheduled_date }}', 'full_day', '{{ task.shooting_merchant.name if task.shooting_merchant else '' }}')" title="点击调整">
                     <span class="task-slot">🌤️</span>
-                    <span class="task-name">{{ task.shooting_merchant.name if task.shooting_merchant else '#' ~ task.merchant_id }}</span>
-                    <span class="task-pg">{{ task.photographer.name if task.photographer else '' }}{% if task.ip %} {{ task.ip.name }}{% endif %}</span>
+                    <span class="task-name">{{ task.shooting_merchant.name if task.shooting_merchant else '#' ~ task.merchant_id }}{% if task.ip %} · {{ task.ip.name }}{% endif %}</span>
+                    <span class="task-pg">{{ task.photographer.name if task.photographer else '' }}</span>
                     <span class="task-status" onclick="event.stopPropagation()">
                         {% if task.locked %}🔒{% endif %}<a href="/schedule/task/{{ task.id }}/done" class="task-action" title="完成">✅</a>
                         <a href="/schedule/task/{{ task.id }}/delete" class="task-action" title="删除" onclick="return confirm('确认删除该排班？')">❌</a>

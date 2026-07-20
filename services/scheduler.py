@@ -9,15 +9,22 @@ def generate_schedule(merchants: list[dict], year: int, month: int,
                       start_day: int = 1, num_days: int | None = None,
                       blocked: dict | None = None,
                       end_date: str | None = None,
-                      locked_tasks: dict | None = None) -> list[dict]:
+                      locked_tasks: dict | None = None,
+                      merchant_ips: dict | None = None) -> list[dict]:
     """
     全局排班。
     locked_tasks: {date: [{merchant_id, photographer_id, time_slot}, ...]} 已锁定的任务
+    merchant_ips: {merchant_id: [ip_id, ...]} 每个商家的出镜IP列表，轮转分配
     """
     if blocked is None:
         blocked = {}
     if locked_tasks is None:
         locked_tasks = {}
+    if merchant_ips is None:
+        merchant_ips = {}
+
+    # IP 轮转计数器：每个商家独立轮转
+    ip_round_robin = {}
 
     from datetime import date as dt, timedelta
     if end_date:
@@ -87,6 +94,15 @@ def generate_schedule(merchants: list[dict], year: int, month: int,
             for m in near:
                 if rnd < m["trips_needed"]:
                     near_slots.append(m)
+
+    def pick_ip(mid):
+        """轮转选择该商家的出镜IP"""
+        ips = merchant_ips.get(mid, [])
+        if not ips:
+            return None
+        idx = ip_round_robin.get(mid, 0) % len(ips)
+        ip_round_robin[mid] = idx + 1
+        return ips[idx]
 
     def is_blocked(mid, date_str, slot):
         day_blocks = blocked.get(date_str, {})
@@ -166,6 +182,7 @@ def generate_schedule(merchants: list[dict], year: int, month: int,
                         "merchant_name": fm["name"], "merchant_id": fm["id"],
                         "photographer_id": pg,
                         "time_slot": "full_day", "video_count": 4,
+                        "ip_id": pick_ip(fm["id"]),
                     })
                     booked_merchants.add(fm["id"])
                     pg_on_far.add(pg)
@@ -211,6 +228,7 @@ def generate_schedule(merchants: list[dict], year: int, month: int,
                 "merchant_name": am_m["name"], "merchant_id": am_m["id"],
                 "photographer_id": pg,
                 "time_slot": "morning", "video_count": 2,
+                "ip_id": pick_ip(am_m["id"]),
             })
             booked_merchants.add(am_m["id"])
             pg_used_am.add(pg)
@@ -238,6 +256,7 @@ def generate_schedule(merchants: list[dict], year: int, month: int,
                     "merchant_name": pm_m["name"], "merchant_id": pm_m["id"],
                     "photographer_id": pg,
                     "time_slot": "afternoon", "video_count": 2,
+                    "ip_id": pick_ip(pm_m["id"]),
                 })
                 booked_merchants.add(pm_m["id"])
                 pg_used_pm.add(pg)

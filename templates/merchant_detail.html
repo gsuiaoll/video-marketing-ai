@@ -34,7 +34,7 @@
         <div class="account-item"><span class="badge badge-green">{{ acc.status }}</span><span>{{ acc.account_name or '未命名' }}</span><span style="color:#999;font-size:12px">{{ acc.access_token[:8] if acc.access_token else '' }}...</span><a href="/douyin/delete/{{ acc.id }}" class="btn btn-sm" style="margin-left:auto;color:#ff4d4f" onclick="return confirm('确认删除？')">删除</a></div>
         {% endfor %}{% else %}<p class="text-muted">未连接</p>{% endif %}
         <div style="margin-top:8px;display:flex;gap:8px"><a href="/douyin/connect/{{ merchant.id }}" class="btn btn-sm btn-douyin">OAuth连接</a><button onclick="var f=document.getElementById('form-douyin');f.style.display=f.style.display=='none'?'block':'none'" class="btn btn-sm">+ 手动录入</button></div>
-        <div id="form-douyin" style="display:none;margin-top:8px;padding:10px;background:#fafafa;border-radius:6px;border:1px dashed #d9d9d9">
+        <div id="form-douyin" style="display:none;margin-top:8px;padding:12px;background:#fafafa;border-radius:6px;border:1px dashed #d9d9d9">
             <form method="post" action="/douyin/manual-token/{{ merchant.id }}">
                 <input type="text" name="account_name" placeholder="账号名称" style="width:100%;margin-bottom:6px"><input type="text" name="access_token" placeholder="Access Token" style="width:100%;margin-bottom:6px"><input type="text" name="refresh_token" placeholder="Refresh Token" style="width:100%;margin-bottom:6px"><button type="submit" class="btn btn-primary btn-sm">保存</button></form>
         </div>
@@ -47,7 +47,7 @@
         <div class="account-item"><span class="badge badge-green">{{ acc.status }}</span><span>{{ acc.account_name or acc.user_id or '未命名' }}</span><a href="/merchants/platform-account/{{ acc.id }}/delete?platform=redbook" class="btn btn-sm" style="margin-left:auto;color:#ff4d4f" onclick="return confirm('确认删除？')">删除</a></div>
         {% endfor %}{% else %}<p class="text-muted">未连接</p>{% endif %}
         <button onclick="var f=document.getElementById('form-redbook');f.style.display=f.style.display=='none'?'block':'none'" class="btn btn-sm" style="margin-top:8px">+ 手动录入</button>
-        <div id="form-redbook" style="display:none;margin-top:8px;padding:10px;background:#fafafa;border-radius:6px;border:1px dashed #d9d9d9">
+        <div id="form-redbook" style="display:none;margin-top:8px;padding:12px;background:#fafafa;border-radius:6px;border:1px dashed #d9d9d9">
             <form method="post" action="/merchants/{{ merchant.id }}/link-platform"><input type="hidden" name="platform" value="redbook">
                 <input type="text" name="account_name" placeholder="账号名称" style="width:100%;margin-bottom:6px"><input type="text" name="user_id" placeholder="小红书用户ID" style="width:100%;margin-bottom:6px"><input type="text" name="access_token" placeholder="Access Token" style="width:100%;margin-bottom:6px"><input type="text" name="refresh_token" placeholder="Refresh Token" style="width:100%;margin-bottom:6px"><button type="submit" class="btn btn-primary btn-sm">保存</button></form>
         </div>
@@ -64,7 +64,7 @@
         <div class="account-item"><span class="badge badge-green">{{ acc.status }}</span><span>{{ acc.account_name or acc.advertiser_id }}</span><span style="color:#999;font-size:12px">ID: {{ acc.advertiser_id }}</span><a href="/merchants/platform-account/{{ acc.id }}/delete?platform=adq" class="btn btn-sm" style="margin-left:auto;color:#ff4d4f" onclick="return confirm('确认删除？')">删除</a></div>
         {% endfor %}{% else %}<p class="text-muted">未关联</p>{% endif %}
         <button onclick="var f=document.getElementById('form-adq');f.style.display=f.style.display=='none'?'block':'none'" class="btn btn-sm" style="margin-top:8px">+ 手动录入</button>
-        <div id="form-adq" style="display:none;margin-top:8px;padding:10px;background:#fafafa;border-radius:6px;border:1px dashed #d9d9d9">
+        <div id="form-adq" style="display:none;margin-top:8px;padding:12px;background:#fafafa;border-radius:6px;border:1px dashed #d9d9d9">
             <form method="post" action="/merchants/{{ merchant.id }}/link-platform"><input type="hidden" name="platform" value="adq">
                 <input type="text" name="account_name" placeholder="账户备注名" style="width:100%;margin-bottom:6px"><input type="text" name="advertiser_id" placeholder="广告主 ID *" style="width:100%;margin-bottom:6px"><input type="text" name="access_token" placeholder="Access Token" style="width:100%;margin-bottom:6px"><input type="text" name="refresh_token" placeholder="Refresh Token" style="width:100%;margin-bottom:6px"><button type="submit" class="btn btn-primary btn-sm">保存</button></form>
         </div>

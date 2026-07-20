@@ -34,11 +34,69 @@ def list_merchants(request: Request, db: Session = Depends(get_db)):
     for m in merchants:
         if m.linked_merchant_id:
             children_map.setdefault(m.linked_merchant_id, []).append(m)
+
+    # ── 出镜IP（通过 ShootingMerchant 名称匹配）──
+    from models import ShootingIP, ShootingMerchant
+    merchant_ip_map = {}  # merchant_id -> [ip_names]
+    all_ips = db.query(ShootingIP).filter(ShootingIP.status == "active").all()
+    # 构建 ShootingMerchant name -> ip list
+    sm_ip_map = {}
+    for ip in all_ips:
+        sm_ip_map.setdefault(ip.merchant_id, []).append(ip.name)
+    # 查询 ShootingMerchant，按名称匹配到 Merchant
+    shooting_merchants = db.query(ShootingMerchant).filter(ShootingMerchant.status == "active").all()
+    sm_name_to_ips = {}
+    for sm in shooting_merchants:
+        if sm.id in sm_ip_map:
+            sm_name_to_ips[sm.name] = sm_ip_map[sm.id]
+    for m in merchants:
+        if m.name in sm_name_to_ips:
+            merchant_ip_map[m.id] = sm_name_to_ips[m.name]
+
+    # ── 短视频平台账号 (douyin + redbook) ──
+    from models import DouyinAccount, RedBookAccount
+    merchant_platforms = {}  # merchant_id -> [("抖音", count), ("小红书", count)]
+    for m in merchants:
+        platforms = []
+        dy_count = db.query(DouyinAccount).filter(
+            DouyinAccount.merchant_id == m.id, DouyinAccount.status == "active"
+        ).count()
+        if dy_count > 0:
+            platforms.append(("🎵抖音", dy_count))
+        rb_count = db.query(RedBookAccount).filter(
+            RedBookAccount.merchant_id == m.id, RedBookAccount.status == "active"
+        ).count()
+        if rb_count > 0:
+            platforms.append(("📕小红书", rb_count))
+        if platforms:
+            merchant_platforms[m.id] = platforms
+
+    # ── 投流平台账号 (oceanengine + adq) ──
+    from models import OceanEngineAccount, ADQAccount
+    merchant_ads = {}  # merchant_id -> [("巨量引擎", count), ("ADQ", count)]
+    for m in merchants:
+        ads = []
+        oe_count = db.query(OceanEngineAccount).filter(
+            OceanEngineAccount.merchant_id == m.id, OceanEngineAccount.status == "active"
+        ).count()
+        if oe_count > 0:
+            ads.append(("📊巨量引擎", oe_count))
+        adq_count = db.query(ADQAccount).filter(
+            ADQAccount.merchant_id == m.id, ADQAccount.status == "active"
+        ).count()
+        if adq_count > 0:
+            ads.append(("💼ADQ", adq_count))
+        if ads:
+            merchant_ads[m.id] = ads
+
     templates = get_templates()
     return templates.TemplateResponse("merchants.html", {
         "request": request,
         "merchants": merchants,
         "children_map": children_map,
+        "merchant_ip_map": merchant_ip_map,
+        "merchant_platforms": merchant_platforms,
+        "merchant_ads": merchant_ads,
     })
 
 

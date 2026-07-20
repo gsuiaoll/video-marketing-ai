@@ -26,6 +26,7 @@ from routes.settings import router as settings_router
 from routes.dashboard import router as dashboard_router
 from routes.schedule import router as schedule_router
 from routes.advertising import router as advertising_router
+from routes.short_videos import router as short_videos_router
 
 app.include_router(auth_router)
 app.include_router(dashboard_router)
@@ -33,6 +34,7 @@ app.include_router(merchants_router)
 app.include_router(scripts_router)
 app.include_router(videos_router)
 app.include_router(advertising_router)
+app.include_router(short_videos_router)
 app.include_router(schedule_router)
 app.include_router(douyin_router)
 app.include_router(cs_router)

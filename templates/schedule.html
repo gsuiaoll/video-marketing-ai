@@ -49,6 +49,25 @@
 <!-- ========== 日历 ========== -->
 {% include 'schedule/_calendar.html' %}
 
+<!-- ========== 今日提醒 + 生成排班（两个 tab 都可见） ========== -->
+{% if not has_today %}
+<div style="background:#fff7e6;border:1px solid #ffa940;border-radius:8px;padding:12px 16px;margin:12px 0;display:flex;align-items:center;gap:12px">
+    <span style="font-size:18px">⚠️</span>
+    <span style="flex:1;font-size:13px">今日（{{ today_str }}）尚未排班。{% if last_date %}上次排班截止 {{ last_date }}。{% endif %}</span>
+</div>
+{% endif %}
+<div class="card" style="margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:16px">
+        <form method="post" action="/schedule/generate" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" onsubmit="return doGenerate()">
+            <input type="hidden" name="photographer_id" id="gen-pid" value="{{ sel_pid }}">
+            <button type="submit" class="btn btn-primary" id="gen-btn" {% if not shooting_merchants %}disabled{% endif %} style="{% if not has_today %}animation:pulse 2s infinite{% endif %}">生成排班</button>
+            <span id="gen-loading" style="display:none;color:#1890ff;font-size:13px">⏳ 正在生成排班...</span>
+            <a href="/schedule/clear-past" class="btn btn-sm" style="color:#999" onclick="return confirm('清除今天之前的所有未完成任务？')">🧹 清理过期</a>
+        </form>
+        <span style="font-size:12px;color:#999">从今天起30天自动排班。手动添加的任务🔒锁定不会被覆盖。</span>
+    </div>
+</div>
+
 <!-- ========== 内容标签 ========== -->
 <style>
 .sch-tab { padding:10px 20px; cursor:pointer; font-weight:600; font-size:14px; color:#999; border-bottom:2px solid transparent; display:inline-block; }
@@ -65,8 +84,8 @@
 
 <div id="sch-merchants" style="display:none;padding-top:16px">
 {% include 'schedule/_photographers.html' %}
-{% include 'schedule/_merchants.html' %}
 {% include 'schedule/_ips.html' %}
+{% include 'schedule/_merchants.html' %}
 </div>
 
 <!-- ========== 排班历史 ========== -->
@@ -97,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <!-- ========== 弹窗 ========== -->
 <div id="block-popup" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:999;justify-content:center;align-items:center">
-    <div style="background:#fff;border-radius:12px;padding:24px;min-width:320px;box-shadow:0 8px 24px rgba(0,0,0,0.15)">
+    <div style="background:#fff;border-radius:8px;padding:24px;min-width:320px;box-shadow:0 8px 24px rgba(0,0,0,0.15)">
         <h4 style="margin:0 0 16px">🔒 屏蔽时间段 — <span id="block-date-label"></span> <span id="block-slot-label"></span></h4>
         <form method="post" action="/schedule/block">
             <input type="hidden" name="date" id="block-date"><input type="hidden" name="time_slot" id="block-slot">
@@ -108,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 
 <div id="move-popup" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:999;justify-content:center;align-items:center">
-    <div style="background:#fff;border-radius:12px;padding:24px;min-width:320px;box-shadow:0 8px 24px rgba(0,0,0,0.15)">
+    <div style="background:#fff;border-radius:8px;padding:24px;min-width:320px;box-shadow:0 8px 24px rgba(0,0,0,0.15)">
         <h4 style="margin:0 0 16px">↔️ 调整排班 — <span id="move-name"></span></h4>
         <form method="post" id="move-form">
             <div class="form-group"><label>新日期</label><input type="date" name="date" id="move-date" required style="width:100%"></div>
@@ -119,6 +138,8 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 
 <script>
+var TODAY = '{{ today_str }}';
+var TOMORROW = '{{ tomorrow_str }}';
 {% include 'schedule/_scripts.html' %}
 </script>
 {% endblock %}
