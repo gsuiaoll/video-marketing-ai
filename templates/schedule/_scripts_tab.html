@@ -1,0 +1,66 @@
+<div style="background:#fff;border-radius:8px;padding:16px 24px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <h3 style="margin:0">📝 拍摄文案（近30天排班 · 每条视频配1条文案）</h3>
+        <span style="font-size:12px;color:#999">手动录入或🤖AI生成</span>
+    </div>
+
+    {% if script_tasks %}
+    {% for t in script_tasks %}
+    {% set scripts = scripts_map.get(t.id, []) %}
+    {% set vcount = t.video_count or 2 %}
+    <div style="margin-bottom:16px;border:1px solid #f0f0f0;border-radius:8px;overflow:hidden">
+        <div style="background:#fafafa;padding:8px 16px;display:flex;align-items:center;gap:12px;font-size:13px">
+            <strong>{{ t.scheduled_date }}</strong>
+            <span>{{ {'morning':'🌅上午','afternoon':'🌇下午','full_day':'🌤全天'}.get(t.time_slot, t.time_slot) }}</span>
+            {% set sm = t.shooting_merchant %}
+            {% if sm and sm.main_merchant_id %}
+            <a href="/merchants/{{ sm.main_merchant_id }}/edit" style="color:#1890ff">{{ sm.name }}</a>
+            {% elif sm %}
+            <a href="/schedule?tab=merchants" style="color:#1890ff" title="在排班商家页编辑">{{ sm.name }}</a>
+            {% else %}
+            <span>{{ '#'~t.merchant_id }}</span>
+            {% endif %}
+            {% if t.ip %}<span style="color:#c41d7f">· {{ t.ip.name }}</span>{% endif %}
+            <span style="color:#999">· {{ t.photographer.name if t.photographer else '' }}</span>
+            <span style="font-size:11px;color:#999;margin-left:auto">{{ vcount }}条视频 → {{ vcount }}条文案</span>
+        </div>
+        <div style="padding:8px 16px">
+        {% for vidx in range(vcount) %}
+        {% set s = scripts[vidx] if vidx < (scripts|length) else None %}
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 0;{% if not loop.last %}border-bottom:1px solid #f5f5f5{% endif %}">
+            <span style="font-size:11px;color:#999;min-width:40px">视频{{ vidx + 1 }}</span>
+            {% if s %}
+            <span style="flex:1;font-size:12px;background:#f6ffed;padding:4px 8px;border-radius:4px">
+                <span style="color:#{{ '52c41a' if s.source == 'ai' else '1890ff' }};font-size:10px">{{ '🤖' if s.source == 'ai' else '✏️' }}</span>
+                {{ s.content[:100] }}{% if s.content|length > 100 %}…{% endif %}
+            </span>
+            <a href="/schedule/script/{{ s.id }}/delete" style="color:#ff4d4f;font-size:11px;text-decoration:none" onclick="return confirm('删除此文案？')">✕</a>
+            {% else %}
+            <input type="text" name="topic" placeholder="选题" style="width:110px;padding:6px 10px;border:1px solid #d9d9d9;border-radius:6px;font-size:13px" form="script-form-{{ t.id }}-{{ vidx }}">
+            <input type="text" name="content" placeholder="文案内容…" style="flex:1;padding:6px 10px;border:1px solid #d9d9d9;border-radius:6px;font-size:13px" form="script-form-{{ t.id }}-{{ vidx }}">
+            <button type="submit" class="btn btn-sm" form="script-form-{{ t.id }}-{{ vidx }}">💾 保存</button>
+            <form method="post" action="/schedule/script/ai-generate" style="display:inline" class="ai-gen-form">
+                <input type="hidden" name="task_id" value="{{ t.id }}">
+                <input type="hidden" name="count" value="1">
+                <input type="hidden" name="topic" class="ai-topic-input">
+                <button type="submit" class="btn btn-sm" style="font-size:11px;white-space:nowrap;color:#1890ff" onclick="var row=this.closest('div');var t=row.querySelector('input[name=topic]');if(t)this.form.querySelector('.ai-topic-input').value=t.value;return confirm('AI为此条视频生成文案？')">🤖 AI写</button>
+            </form>
+            <form method="post" action="/schedule/script/new" style="display:none" id="script-form-{{ t.id }}-{{ vidx }}">
+                <input type="hidden" name="task_id" value="{{ t.id }}">
+            </form>
+            {% endif %}
+        </div>
+        {% endfor %}
+        <div style="padding:4px 16px 8px;border-top:1px solid #f0f0f0">
+            <form method="post" action="/schedule/script/new" style="display:inline">
+                <input type="hidden" name="task_id" value="{{ t.id }}">
+                <button type="submit" class="btn btn-sm" style="font-size:11px;color:#1890ff">＋ 加一条</button>
+            </form>
+        </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div style="text-align:center;padding:48px;color:#999">暂无排班任务，先生成排班</div>
+    {% endif %}
+</div>

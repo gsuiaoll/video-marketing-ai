@@ -292,3 +292,19 @@ class CSMessage(Base):
     intent = Column(String)           # 意图类别
     status = Column(String, default="pending")  # pending | replied
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
+
+
+class ShootingScript(Base):
+    """拍摄文案 — 每个排班任务可有多条文案"""
+    __tablename__ = "shooting_scripts"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    task_id = Column(Integer, ForeignKey("shooting_tasks.id"), nullable=True)
+    merchant_id = Column(Integer, nullable=True)
+    ip_id = Column(Integer, nullable=True)
+    topic = Column(String, default="")
+    content = Column(Text, default="")
+    source = Column(String, default="manual")  # manual | ai
+    status = Column(String, default="draft")   # draft | done
+    created_at = Column(TIMESTAMP, default=datetime.utcnow)
+
+    task = relationship("ShootingTask")

@@ -26,7 +26,11 @@
 .task-action { text-decoration:none; font-size:10px; cursor:pointer; }
 .task-action:hover { transform:scale(1.2); }
 @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(24,144,255,0.4)} 50%{box-shadow:0 0 0 6px rgba(24,144,255,0)} }
+.sch-tab { padding:10px 20px; cursor:pointer; font-weight:600; font-size:14px; color:#999; border-bottom:2px solid transparent; display:inline-block; }
+.sch-tab.active { color:#1890ff; border-bottom-color:#1890ff; }
 </style>
+
+<!-- ===== 公共头部：月历 + 汇总 + 生成（所有 tab 可见）===== -->
 
 <div class="page-header">
     <h1>📅 拍摄排班 — {{ month_name }}</h1>
@@ -37,7 +41,6 @@
     </div>
 </div>
 
-<!-- ========== 摄影师筛选 ========== -->
 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
     <span style="font-size:12px;color:#666">摄影师：</span>
     <a href="/schedule" class="btn btn-sm {{ 'btn-primary' if not sel_pid else '' }}">全部</a>
@@ -46,10 +49,8 @@
     {% endfor %}
 </div>
 
-<!-- ========== 日历 ========== -->
 {% include 'schedule/_calendar.html' %}
 
-<!-- ========== 排班汇总 ========== -->
 <div class="card" style="margin-top:16px">
     <h4 style="margin:0 0 12px">📊 排班汇总 — 今起30天 ({{ today_str }} ~ {{ end_30_str }})</h4>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
@@ -76,7 +77,6 @@
             <span style="font-size:11px;color:#999">总可用容量</span>
         </div>
     </div>
-
     {% if pg_stats %}
     <table class="table" style="font-size:12px;margin-top:12px">
         <thead><tr><th>摄影师</th><th>身份</th><th>可用天数</th><th>容量</th><th>排班次数</th><th>🌅上午</th><th>🌇下午</th><th>🌤全天</th><th>视频产出</th><th>负荷率</th><th>状态</th></tr></thead>
@@ -87,27 +87,17 @@
         {% set load_pct = (ps.slots / max_s * 100)|int if max_s > 0 else 0 %}
         <tr>
             <td><strong>{{ ps.name }}</strong></td>
-            <td style="font-size:12px">
-                {% set rl = {'founder': '🔴创始人', 'fulltime': '🟢全职', 'parttime': '🔵兼职'} %}
-                {{ rl.get(cap.get('role', ''), '全职') }}
-            </td>
+            <td style="font-size:12px">{% set rl = {'founder': '🔴创始人', 'fulltime': '🟢全职', 'parttime': '🔵兼职'} %}{{ rl.get(cap.get('role', ''), '全职') }}</td>
             <td>{{ cap.get('available_days', '?') }}天</td>
             <td style="font-size:11px;color:#666">{{ max_s }}时段</td>
             <td>{{ ps.slots }}次</td>
             <td>{{ ps.am }}</td><td>{{ ps.pm }}</td><td>{{ ps.fd }}<span style="font-size:10px;color:#999">（{{ ps.fd * 2 }}时段）</span></td>
             <td>{% if flexible_quota > 0 %}{{ ps.videos + flexible_quota }}{% else %}{{ ps.videos }}{% endif %}条<span style="font-size:10px;color:#999">{% if flexible_quota > 0 %}（{{ ps.videos }}+{{ flexible_quota }}灵活）{% endif %}</span></td>
             <td>
-                <div style="background:#f0f0f0;border-radius:4px;height:16px;width:100px">
-                    <div style="background:{% if load_pct > 90 %}#ff4d4f{% elif load_pct > 70 %}#faad14{% else %}#52c41a{% endif %};height:100%;width:{{ [load_pct, 100]|min }}%;border-radius:4px;transition:width 0.3s"></div>
-                </div>
+                <div style="background:#f0f0f0;border-radius:4px;height:16px;width:100px"><div style="background:{% if load_pct > 90 %}#ff4d4f{% elif load_pct > 70 %}#faad14{% else %}#52c41a{% endif %};height:100%;width:{{ [load_pct, 100]|min }}%;border-radius:4px;transition:width 0.3s"></div></div>
                 <span style="font-size:10px;color:#666">{{ load_pct }}%</span>
             </td>
-            <td>
-                {% if load_pct > 90 %}<span style="color:#ff4d4f;font-size:12px">⚠️ 满负荷</span>
-                {% elif load_pct > 70 %}<span style="color:#faad14;font-size:12px">🔶 较忙</span>
-                {% else %}<span style="color:#52c41a;font-size:12px">✅ 正常</span>
-                {% endif %}
-            </td>
+            <td>{% if load_pct > 90 %}<span style="color:#ff4d4f;font-size:12px">⚠️ 满负荷</span>{% elif load_pct > 70 %}<span style="color:#faad14;font-size:12px">🔶 较忙</span>{% else %}<span style="color:#52c41a;font-size:12px">✅ 正常</span>{% endif %}</td>
         </tr>
         {% endfor %}
         </tbody>
@@ -115,7 +105,6 @@
     {% endif %}
 </div>
 
-<!-- ========== 今日提醒 + 生成排班（两个 tab 都可见） ========== -->
 {% if not has_today %}
 <div style="background:#fff7e6;border:1px solid #ffa940;border-radius:8px;padding:12px 16px;margin:12px 0;display:flex;align-items:center;gap:12px">
     <span style="font-size:18px">⚠️</span>
@@ -134,16 +123,14 @@
     </div>
 </div>
 
-<!-- ========== 内容标签 ========== -->
-<style>
-.sch-tab { padding:10px 20px; cursor:pointer; font-weight:600; font-size:14px; color:#999; border-bottom:2px solid transparent; display:inline-block; }
-.sch-tab.active { color:#1890ff; border-bottom-color:#1890ff; }
-</style>
+<!-- ========== Tab 栏 ========== -->
 <div style="border-bottom:2px solid #f0f0f0;margin:16px 0 0 0">
     <span class="sch-tab active" onclick="showScheduleTab('forms',this)">📋 排班操作</span>
     <span class="sch-tab" onclick="showScheduleTab('merchants',this)">🏪 商家 & 出镜IP</span>
+    <span class="sch-tab" onclick="showScheduleTab('scripts',this)">📝 文案</span>
 </div>
 
+<!-- ========== Tab 内容 ========== -->
 <div id="sch-forms" style="padding-top:16px">
 {% include 'schedule/_forms.html' %}
 </div>
@@ -152,6 +139,10 @@
 {% include 'schedule/_photographers.html' %}
 {% include 'schedule/_merchants.html' %}
 {% include 'schedule/_ips.html' %}
+</div>
+
+<div id="sch-scripts" style="display:none;padding-top:16px">
+{% include 'schedule/_scripts_tab.html' %}
 </div>
 
 <!-- ========== 实际拍摄数填报 ========== -->
@@ -169,18 +160,8 @@
             <td>{{ t.shooting_merchant.name if t.shooting_merchant else '#' ~ t.merchant_id }}</td>
             <td>{{ t.ip.name if t.ip else '-' }}</td>
             <td style="text-align:center">{{ t.video_count }}</td>
-            <td>
-                <input type="number" name="actual_{{ t.id }}" value="{{ t.actual_video_count or '' }}" min="0" max="30"
-                       style="width:60px;text-align:center;padding:4px"
-                       placeholder="{{ t.video_count }}">
-            </td>
-            <td>
-                {% if t.status == 'done' %}
-                <span class="badge badge-green">已完成</span>
-                {% else %}
-                <span class="badge badge-blue">待拍</span>
-                {% endif %}
-            </td>
+            <td><input type="number" name="actual_{{ t.id }}" value="{{ t.actual_video_count or '' }}" min="0" max="30" style="width:60px;text-align:center;padding:4px" placeholder="{{ t.video_count }}"></td>
+            <td>{% if t.status == 'done' %}<span class="badge badge-green">已完成</span>{% else %}<span class="badge badge-blue">待拍</span>{% endif %}</td>
         </tr>
         {% endfor %}
         </tbody>
@@ -193,7 +174,6 @@
 </div>
 {% endif %}
 
-<!-- ========== 排班历史 ========== -->
 {% include 'schedule/_history.html' %}
 
 <script>
@@ -202,16 +182,17 @@ function showScheduleTab(name, el) {
     el.classList.add('active');
     document.getElementById('sch-forms').style.display = name === 'forms' ? '' : 'none';
     document.getElementById('sch-merchants').style.display = name === 'merchants' ? '' : 'none';
+    document.getElementById('sch-scripts').style.display = name === 'scripts' ? '' : 'none';
     localStorage.setItem('scheduleTab', name);
 }
-// 恢复上次的标签页（DOM 加载后执行）
 document.addEventListener('DOMContentLoaded', function() {
-    var saved = localStorage.getItem('scheduleTab');
-    if (saved && saved !== 'forms') {
+    var tab = new URLSearchParams(window.location.search).get('tab');
+    if (!tab) tab = localStorage.getItem('scheduleTab');
+    if (tab && tab !== 'forms') {
         var tabs = document.querySelectorAll('.sch-tab');
         for (var i = 0; i < tabs.length; i++) {
-            if (tabs[i].getAttribute('onclick').indexOf(saved) >= 0) {
-                showScheduleTab(saved, tabs[i]);
+            if (tabs[i].getAttribute('onclick') && tabs[i].getAttribute('onclick').indexOf(tab) >= 0) {
+                showScheduleTab(tab, tabs[i]);
                 break;
             }
         }
@@ -219,7 +200,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<!-- ========== 弹窗 ========== -->
 <div id="block-popup" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:999;justify-content:center;align-items:center">
     <div style="background:#fff;border-radius:8px;padding:24px;min-width:320px;box-shadow:0 8px 24px rgba(0,0,0,0.15)">
         <h4 style="margin:0 0 16px">🔒 屏蔽时间段 — <span id="block-date-label"></span> <span id="block-slot-label"></span></h4>

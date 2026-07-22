@@ -16,7 +16,22 @@ label .required { color:#ff4d4f; font-weight:bold; }
             <input type="text" name="name" required value="{{ merchant.name if merchant else '' }}">
         </div>
 
-        <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+        {% if request.query_params.get('ai') == 'done' %}
+        <div class="alert" style="background:#f6ffed;border:1px solid #b7eb8f;padding:8px 16px;border-radius:6px;margin-bottom:12px;font-size:13px">✅ AI已完善商家画像，请检查并保存修改</div>
+        {% elif request.query_params.get('ai') == 'refreshed' %}
+        <div class="alert" style="background:#e6f7ff;border:1px solid #91d5ff;padding:8px 16px;border-radius:6px;margin-bottom:12px;font-size:13px">🔄 已搜索最新动态并更新"近期情况"字段</div>
+        {% endif %}
+        <div id="ai-loading" style="display:none;background:#fff7e6;border:2px solid #faad14;border-radius:8px;padding:16px 24px;margin-bottom:12px;text-align:center">
+            <span style="font-size:16px">⏳ AI 正在多路搜索并分析中…</span>
+            <span style="display:block;font-size:12px;color:#999;margin-top:4px">工商信息 → 口碑评价 → 近期动态 → 汇总填写，约需 30-60 秒</span>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:16px;gap:12px">
+            {% if merchant %}
+            <a href="/merchants/{{ merchant.id }}/ai-refresh" class="btn btn-lg" style="background:#13c2c2;color:#fff"
+               onclick="document.getElementById('ai-loading').style.display='block';setTimeout(function(){return true;},100);return confirm('搜索商家最新动态并更新近期情况？')">🔄 刷新动态</a>
+            <button type="button" class="btn btn-lg" style="background:#722ed1;color:#fff" id="ai-enrich-btn"
+                    onclick="if(confirm('AI将分三路并行搜索（工商+口碑+动态），确认？')){document.getElementById('ai-loading').style.display='block';this.disabled=true;this.textContent='⏳ 搜索中…';var f=document.createElement('form');f.method='POST';f.action='/merchants/{{ merchant.id }}/ai-enrich';document.body.appendChild(f);f.submit()}">🤖 AI 完善信息</button>
+            {% endif %}
             <button type="submit" class="btn btn-primary btn-lg">{{ '保存修改' if merchant else '创建商家' }}</button>
         </div>
 
@@ -132,10 +147,14 @@ label .required { color:#ff4d4f; font-weight:bold; }
                 ('promotions', '推广活动', '当前优惠、促销活动、会员权益等'),
                 ('shooting_notes', '拍摄备注', '场地光线、拍摄禁忌、偏好风格等'),
             ] %}
+            {% set ai_filled = request.query_params.get('filled', '').split(',') if request.query_params.get('filled') else [] %}
             {% for key, label, placeholder in profile_fields %}
             <div class="form-group" style="margin-bottom:10px" {% if key == 'shooting_notes' %}id="shooting-notes-group"{% endif %}>
-                <label style="font-size:12px;font-weight:500">{{ label }}</label>
-                <textarea name="{{ key }}" rows="2" placeholder="{{ placeholder }}" style="font-size:13px">{{ merchant[key] if merchant and merchant[key] else '' }}</textarea>
+                <label style="font-size:12px;font-weight:500">
+                    {{ label }}
+                    {% if key in ai_filled %}<span style="color:#52c41a;font-size:10px;margin-left:4px">✅AI已填</span>{% endif %}
+                </label>
+                <textarea name="{{ key }}" rows="2" placeholder="{{ placeholder }}" style="font-size:13px;{% if key in ai_filled %}border-color:#52c41a;background:#f6ffed{% endif %}">{{ merchant[key] if merchant and merchant[key] else '' }}</textarea>
             </div>
             {% endfor %}
         </div>

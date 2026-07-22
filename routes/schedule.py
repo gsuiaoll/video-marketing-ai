@@ -282,6 +282,26 @@ def schedule_view(request: Request, db: Session = Depends(get_db)):
 
     quota_gap = total_quota - total_videos
 
+    # 文案数据（供文案tab使用）
+    from models import ShootingScript
+    script_tasks, scripts_map_data = [], {}
+    schedule_end_scripts = (today + timedelta(days=30)).strftime("%Y-%m-%d")
+    script_task_query = db.query(ShootingTask).options(
+        joinedload(ShootingTask.shooting_merchant),
+        joinedload(ShootingTask.photographer),
+        joinedload(ShootingTask.ip)
+    ).filter(
+        ShootingTask.scheduled_date >= today_str,
+        ShootingTask.scheduled_date <= schedule_end_scripts,
+        ShootingTask.status == "scheduled"
+    ).order_by(ShootingTask.scheduled_date).all()
+    script_tasks = script_task_query
+    st_ids = [t.id for t in script_tasks]
+    if st_ids:
+        st_scripts = db.query(ShootingScript).filter(ShootingScript.task_id.in_(st_ids)).order_by(ShootingScript.id).all()
+        for s in st_scripts:
+            scripts_map_data.setdefault(s.task_id, []).append(s)
+
     seven_days_ago = (today - timedelta(days=7)).strftime("%Y-%m-%d")
     recent_completed = db.query(ShootingTask).options(
         joinedload(ShootingTask.shooting_merchant),
@@ -296,6 +316,7 @@ def schedule_view(request: Request, db: Session = Depends(get_db)):
     templates = get_templates()
     return templates.TemplateResponse("schedule.html", {
         "request": request,
+        "active_tab": "schedule",
         "photographers": photographers,
         "all_merchants": all_merchants,
         "merchant_photographers": merchant_photographers,
@@ -324,6 +345,8 @@ def schedule_view(request: Request, db: Session = Depends(get_db)):
         "auto_quota": auto_quota, "auto_videos": auto_videos, "auto_slots": auto_slots,
         "end_30_str": schedule_end_str,
         "recent_completed": recent_completed,
+        "script_tasks": script_tasks,
+        "scripts_map": scripts_map_data,
     })
 
 

@@ -305,6 +305,63 @@ def edit_merchant_page(merchant_id: int, request: Request, db: Session = Depends
     })
 
 
+@router.post("/{merchant_id}/ai-enrich")
+async def ai_enrich_merchant(merchant_id: int, request: Request, db: Session = Depends(get_db)):
+    """AI搜索+完善商家信息"""
+    check_auth(request)
+    merchant = db.query(Merchant).filter(Merchant.id == merchant_id).first()
+    if not merchant:
+        raise HTTPException(status_code=404)
+
+    name = merchant.name or ""
+    district = merchant.district or ""
+    industry = merchant.industry or ""
+
+    # 多 Agent 三路并行搜索 → 维度汇总
+    enrich_data = {}
+    try:
+        from services.ai_script import call_multi_agent
+        enrich_data = call_multi_agent(name, district, industry)
+    except Exception:
+        pass
+    if not enrich_data:
+        try:
+            from services.ai_script import call_ai
+            result = call_ai(
+                f"为'{name}'({district} {industry})搜索并填写画像。用web_search搜索后按格式输出每项一行：\n主打产品/菜品：\n近期情况：\n业务模式：\n服务特色：\n目标客户：\n竞争优势：\n推广活动：\n拍摄备注：",
+                system="你是商业调研助手。用web_search搜索真实信息填写，不编造。每项20-50字。",
+                enable_search=True, context="merchant_enrich", merchant_id=str(merchant_id))
+            if result:
+                for line in result.strip().split("\n"):
+                    for key in ["主打产品/菜品：", "近期情况：", "业务模式：", "服务特色：",
+                               "目标客户：", "竞争优势：", "推广活动：", "拍摄备注："]:
+                        if line.strip().startswith(key):
+                            val = line.strip()[len(key):].strip()
+                            if val and val not in ("无", "暂无"):
+                                enrich_data[key.replace("：", "")] = val
+        except Exception:
+            pass
+
+    # 更新商家信息（AI结果不为空才覆盖）
+    field_map = {
+        "主打产品/菜品": "products_dishes",
+        "近期情况": "recent_updates",
+        "业务模式": "business_model",
+        "服务特色": "service_features",
+        "目标客户": "target_customers",
+        "竞争优势": "competitive_advantages",
+        "推广活动": "promotions",
+        "拍摄备注": "shooting_notes",
+    }
+    for cn_key, attr in field_map.items():
+        if cn_key in enrich_data and enrich_data[cn_key]:
+            setattr(merchant, attr, enrich_data[cn_key])
+
+    db.commit()
+    filled = ",".join(enrich_data.keys()) if enrich_data else ""
+    return RedirectResponse(url=f"/merchants/{merchant_id}/edit?ai=done&filled={filled}", status_code=302)
+
+
 @router.post("/{merchant_id}/edit")
 async def update_merchant(merchant_id: int, request: Request, db: Session = Depends(get_db)):
     """保存编辑"""
@@ -333,6 +390,28 @@ async def update_merchant(merchant_id: int, request: Request, db: Session = Depe
     merchant.linked_merchant_id = int(linked_raw) if linked_raw and linked_raw.isdigit() else None
     db.commit()
     return RedirectResponse(url=f"/merchants/{merchant_id}", status_code=302)
+
+
+@router.get("/{merchant_id}/ai-refresh")
+def ai_refresh_merchant(merchant_id: int, request: Request, db: Session = Depends(get_db)):
+    """定时任务：每周自动刷新商家近期情况"""
+    check_auth(request)
+    merchant = db.query(Merchant).filter(Merchant.id == merchant_id).first()
+    if not merchant:
+        raise HTTPException(status_code=404)
+    try:
+        from services.ai_script import scheduled_merchant_refresh
+        result = scheduled_merchant_refresh(
+            merchant.name or "", merchant.district or "", merchant.industry or "")
+        if result and result.get("近期情况"):
+            merchant.recent_updates = (
+                (merchant.recent_updates or "") +
+                f"\n[{datetime.utcnow().strftime('%Y-%m-%d')}] {result['近期情况']}"
+            ).strip()
+            db.commit()
+        return RedirectResponse(url=f"/merchants/{merchant_id}/edit?ai=refreshed", status_code=302)
+    except Exception:
+        return RedirectResponse(url=f"/merchants/{merchant_id}/edit?ai=refresh-failed", status_code=302)
 
 
 @router.get("/{merchant_id}/delete")
