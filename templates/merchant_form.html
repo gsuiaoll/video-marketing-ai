@@ -77,6 +77,16 @@ label .required { color:#ff4d4f; font-weight:bold; }
             </div>
             <input type="hidden" name="industry" id="industry-hidden" value="{{ merchant.industry if merchant else '' }}">
         </div>
+        {% set bt = (merchant.business_model or '') if merchant else '' %}
+        <div class="form-group" style="margin-bottom:12px">
+            <label style="font-size:12px;font-weight:500">业务类型</label>
+            <select name="business_type" style="width:auto;min-width:200px">
+                <option value="">请选择…</option>
+                <option value="ToC" {% if 'ToC' in bt and 'ToB' not in bt %}selected{% endif %}>👤 ToC — 面向个人消费者</option>
+                <option value="ToB" {% if 'ToB' in bt and 'ToC' not in bt %}selected{% endif %}>🏢 ToB — 面向企业客户</option>
+                <option value="Both" {% if 'ToB' in bt and 'ToC' in bt %}selected{% endif %}>🏢👤 两者都有 — 企业和个人都做</option>
+            </select>
+        </div>
         <div class="form-row">
             <div class="form-group">
                 <label>联系人</label>

@@ -328,12 +328,23 @@ async def ai_enrich_merchant(merchant_id: int, request: Request, db: Session = D
         try:
             from services.ai_script import call_ai
             result = call_ai(
-                f"为'{name}'({district} {industry})搜索并填写画像。用web_search搜索后按格式输出每项一行：\n主打产品/菜品：\n近期情况：\n业务模式：\n服务特色：\n目标客户：\n竞争优势：\n推广活动：\n拍摄备注：",
-                system="你是商业调研助手。用web_search搜索真实信息填写，不编造。每项20-50字。",
+                f"为'{name}'({district} {industry})搜索并填写信息。\n"
+                f"先用web_search搜索'{name} {district}'获取工商信息。\n\n"
+                f"按格式输出（每项一行）：\n"
+                f"行业分类：餐饮/建材/汽车/教育/旅游/其他\n"
+                f"细分行业：如中餐、地板、二手车等\n"
+                f"业务类型：ToB(面向企业) / ToC(面向个人) / 两者都有\n"
+                f"联系人：\n联系电话：\n详细地址：\n"
+                f"主打产品/菜品：\n近期情况：\n业务模式：\n服务特色：\n"
+                f"目标客户：\n竞争优势：\n推广活动：\n拍摄备注：\n\n"
+                f"要求：用web_search搜索真实信息，不编造。每项20-50字。",
+                system="你是商业调研助手，用web_search搜索真实信息。"
+                       "先判断公司类型(ToB/ToC)，再搜索工商和产品信息。基于搜索结果填写，不编造。",
                 enable_search=True, context="merchant_enrich", merchant_id=str(merchant_id))
             if result:
                 for line in result.strip().split("\n"):
-                    for key in ["主打产品/菜品：", "近期情况：", "业务模式：", "服务特色：",
+                    for key in ["行业分类：", "细分行业：", "业务类型：", "联系人：", "联系电话：", "详细地址：",
+                               "主打产品/菜品：", "近期情况：", "业务模式：", "服务特色：",
                                "目标客户：", "竞争优势：", "推广活动：", "拍摄备注："]:
                         if line.strip().startswith(key):
                             val = line.strip()[len(key):].strip()
@@ -344,6 +355,11 @@ async def ai_enrich_merchant(merchant_id: int, request: Request, db: Session = D
 
     # 更新商家信息（AI结果不为空才覆盖）
     field_map = {
+        "行业分类": "industry",
+        "细分行业": "sub_industry",
+        "详细地址": "address",
+        "联系人": "contact_name",
+        "联系电话": "contact_phone",
         "主打产品/菜品": "products_dishes",
         "近期情况": "recent_updates",
         "业务模式": "business_model",
@@ -356,6 +372,15 @@ async def ai_enrich_merchant(merchant_id: int, request: Request, db: Session = D
     for cn_key, attr in field_map.items():
         if cn_key in enrich_data and enrich_data[cn_key]:
             setattr(merchant, attr, enrich_data[cn_key])
+
+    # 业务类型（ToB/ToC）保存到业务模式字段前缀
+    if "业务类型" in enrich_data:
+        bt = enrich_data["业务类型"]
+        existing = merchant.business_model or ""
+        if "ToB" in bt and "ToB" not in existing:
+            merchant.business_model = "ToB | " + existing if existing else "ToB"
+        elif "ToC" in bt and "ToC" not in existing:
+            merchant.business_model = "ToC | " + existing if existing else "ToC"
 
     db.commit()
     filled = ",".join(enrich_data.keys()) if enrich_data else ""
@@ -372,6 +397,7 @@ async def update_merchant(merchant_id: int, request: Request, db: Session = Depe
     form = await request.form()
     merchant.name = form.get("name", merchant.name)
     merchant.industry = form.get("industry", merchant.industry)
+    merchant.sub_industry = form.get("sub_industry", merchant.sub_industry)
     merchant.contact_name = form.get("contact_name", merchant.contact_name)
     merchant.contact_phone = form.get("contact_phone", merchant.contact_phone)
     merchant.address = form.get("address", merchant.address)
@@ -386,6 +412,13 @@ async def update_merchant(merchant_id: int, request: Request, db: Session = Depe
     merchant.promotions = form.get("promotions", merchant.promotions)
     merchant.shooting_notes = form.get("shooting_notes", merchant.shooting_notes)
     merchant.need_shooting = 1 if form.get("need_shooting", "1") == "1" else 0
+    bt = form.get("business_type", "")
+    if bt:
+        existing = (merchant.business_model or "").replace("ToB | ", "").replace("ToC | ", "").replace("ToB+ToC | ", "")
+        if bt == "Both":
+            merchant.business_model = f"ToB+ToC | {existing}" if existing else "ToB+ToC"
+        else:
+            merchant.business_model = f"{bt} | {existing}" if existing else bt
     linked_raw = form.get("linked_merchant_id", "")
     merchant.linked_merchant_id = int(linked_raw) if linked_raw and linked_raw.isdigit() else None
     db.commit()

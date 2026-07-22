@@ -18,6 +18,7 @@ class Merchant(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
     industry = Column(String)
+    sub_industry = Column(String, default="")
     contact_name = Column(String)
     contact_phone = Column(String)
     address = Column(String)
