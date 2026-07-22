@@ -1,25 +1,59 @@
 <!-- ========== 摄影师管理 ========== -->
 <div class="card" style="margin-bottom:12px">
-    <div style="display:flex;align-items:center;justify-content:space-between">
-        <h3 style="margin:0">📷 摄影师 ({{ photographers|length }}人)</h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <h4 style="margin:0">📷 摄影师 ({{ photographers|length }}人)</h4>
         <button class="btn btn-primary btn-sm" onclick="showPgForm()" id="show-pg-btn">+ 添加摄影师</button>
     </div>
-    <div id="pg-form" style="display:none;margin-top:12px;padding:12px;background:#fafafa;border-radius:6px;border:1px dashed #d9d9d9">
-        <form method="post" id="pg-form-el" action="/schedule/photographer/new" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+
+    <!-- 添加/编辑表单 -->
+    <div id="pg-form" style="display:none;padding:12px;background:#fafafa;border-radius:6px;border:1px dashed #d9d9d9;margin-bottom:8px">
+        <form method="post" id="pg-form-el" action="/schedule/photographer/new">
             <input type="hidden" name="pg_id" id="pg-id"><input type="hidden" name="photographer_id" value="{{ sel_pid }}">
-            <div class="form-group" style="margin:0;flex:1"><label>姓名 *</label><input type="text" name="name" id="pg-name" required style="width:100%"></div>
-            <div class="form-group" style="margin:0;flex:1"><label>电话</label><input type="text" name="phone" id="pg-phone" style="width:100%"></div>
-            <button type="submit" class="btn btn-primary btn-sm" id="pg-submit">保存</button>
-            <button type="button" class="btn btn-sm" onclick="document.getElementById('pg-form').style.display='none';document.getElementById('show-pg-btn').style.display='inline-block'">取消</button>
+            <div class="form-row">
+                <div class="form-group"><label>姓名 *</label><input type="text" name="name" id="pg-name" required></div>
+                <div class="form-group"><label>电话</label><input type="text" name="phone" id="pg-phone"></div>
+                <div class="form-group"><label>身份</label>
+                <select name="role" id="pg-role" onchange="var f=document.getElementById('pg-flexible-opts');var as=document.getElementById('pg-auto-schedule');if(this.value==='flexible'){f.style.display='none';as.value='0'}else{f.style.display='';as.value='1'}"><option value="founder">创始人（不休假）</option><option value="fulltime" selected>全职</option><option value="parttime">兼职</option><option value="flexible">灵活（熟客/不固定）</option></select></div>
+            </div>
+            <div class="form-row" id="pg-flexible-opts">
+                <div class="form-group"><label>每周休息</label>
+                <select name="days_off_per_week" id="pg-days-off"><option value="0">不休</option><option value="1" selected>1天</option><option value="2">2天</option></select></div>
+                <div class="form-group"><label>每日上限</label>
+                <select name="max_slots_per_day" id="pg-max-slots"><option value="1">1时段（半天）</option><option value="2" selected>2时段（全天）</option></select></div>
+                <div class="form-group"><label>偏好/备注</label>
+                <input type="text" name="preferences" id="pg-preferences" placeholder="擅长领域、不愿拍的类型等"></div>
+            </div>
+            <input type="hidden" name="auto_schedule" id="pg-auto-schedule" value="1">
+            <div style="display:flex;gap:8px">
+                <button type="submit" class="btn btn-primary btn-sm" id="pg-submit">保存</button>
+                <button type="button" class="btn btn-sm" onclick="document.getElementById('pg-form').style.display='none';document.getElementById('show-pg-btn').style.display='inline-block'">取消</button>
+            </div>
         </form>
     </div>
+
+    <!-- 摄影师列表 -->
     {% if photographers %}
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+    <table class="table" style="font-size:13px;margin-top:8px">
+        <thead><tr><th>姓名</th><th>电话</th><th>身份</th><th>每周休息</th><th>每日上限</th><th>偏好/备注</th><th>操作</th></tr></thead>
+        <tbody>
         {% for p in photographers %}
-        <span style="background:#f0f5ff;border:1px solid #adc6ff;padding:4px 10px;border-radius:4px;font-size:13px">
-            {{ p.name }}{% if p.phone %} ({{ p.phone }}){% endif %}
-            <a href="javascript:void(0)" onclick="editPg({{ p.id }},'{{ p.name|e }}','{{ p.phone or ''|e }}')" style="color:#1890ff;margin-left:4px">✏️</a>
-            <a href="/schedule/photographer/{{ p.id }}/delete" style="color:#ff4d4f;margin-left:2px" onclick="return confirm('删除摄影师？')">🗑</a>
-        </span>{% endfor %}
-    </div>{% endif %}
+        <tr>
+            <td><strong>{{ p.name }}</strong></td>
+            <td>{{ p.phone or '-' }}</td>
+            <td>
+                {% set rl = {'founder': '🔴 创始人', 'fulltime': '🟢 全职', 'parttime': '🔵 兼职', 'flexible': '🟡 灵活'} %}
+                {{ rl.get(p.role, '全职') }}
+            </td>
+            <td>{% if p.role == 'founder' %}不休{% elif p.role == 'flexible' %}不固定{% elif p.days_off_per_week == 0 %}不休{% else %}{{ p.days_off_per_week or 1 }}天{% endif %}</td>
+            <td>{% if p.role == 'flexible' %}-{% else %}{{ p.max_slots_per_day or 2 }}时段{% endif %}</td>
+            <td style="font-size:12px;color:#666;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.preferences or '-' }}{% if p.auto_schedule == 0 %} <span style="color:#faad14;font-size:10px">[手动]</span>{% endif %}</td>
+            <td style="white-space:nowrap">
+                <a href="javascript:void(0)" onclick="editPg({{ p.id }},'{{ p.name|e }}','{{ p.phone or ''|e }}','{{ p.role or 'fulltime' }}',{{ p.days_off_per_week or 1 }},{{ p.max_slots_per_day or 2 }},'{{ (p.preferences or '')|e }}',{{ p.auto_schedule or 1 }})" class="btn btn-sm">✏️ 编辑</a>
+                <a href="/schedule/photographer/{{ p.id }}/delete" class="btn btn-sm" style="color:#ff4d4f" onclick="return confirm('删除摄影师？')">🗑 删除</a>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
 </div>

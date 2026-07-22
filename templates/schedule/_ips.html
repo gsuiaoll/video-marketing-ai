@@ -1,77 +1,129 @@
+<!-- ========== 出镜IP人物管理 ========== -->
 <div class="card" style="margin-top:12px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <h4 style="margin:0">👤 出镜IP人物 ({{ all_ips|length }})</h4>
         <button class="btn btn-primary btn-sm" onclick="var f=document.getElementById('ip-form-card');f.style.display=f.style.display==='none'?'block':'none'">+ 添加IP</button>
     </div>
+
+    <!-- IP 表单（含人物画像） -->
     <div id="ip-form-card" style="display:none;padding:12px;background:#fafafa;border-radius:6px;border:1px dashed #d9d9d9;margin-bottom:8px">
-    <form method="post" id="ip-form" action="/schedule/ip/new" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+    <form method="post" id="ip-form" action="/schedule/ip/new">
         <input type="hidden" name="ip_id" id="ip-id" value="">
-        <div class="form-group" style="margin:0"><label style="font-size:12px">所属商家</label>
-        <select name="merchant_id" id="ip-mid" style="width:150px">{% for m in shooting_merchants %}<option value="{{ m.id }}">{{ m.name }}{% if m.linked_merchant_id %}（分厂）{% endif %}</option>{% endfor %}</select></div>
-        <div class="form-group" style="margin:0"><label style="font-size:12px">IP名称</label>
-        <input type="text" name="name" id="ip-name" placeholder="如：老板、小玲" style="width:140px" required></div>
-        <div class="form-group" style="margin:0"><label style="font-size:12px">角色</label>
-        <select id="ip-role-select" onchange="var v=this.value;var inp=document.getElementById('ip-role');if(v==='__custom__'){inp.style.display='';inp.value='';inp.focus()}else{inp.style.display='none';inp.value=v}" style="width:120px">
-            <option value="">选填</option><option>老板</option><option>合伙人</option><option>店长</option><option>主播</option><option>达人</option><option>厨师</option><option>员工</option><option value="__custom__">✏️ 自定义…</option></select>
-        <input type="text" name="role" id="ip-role" placeholder="手动输入" style="width:120px;display:none"></div>
-        <div class="form-group" style="margin:0"><label style="font-size:12px">月配额</label>
-        <input type="number" name="monthly_quota" id="ip-quota" value="25" min="0" style="width:70px"></div>
-        <div class="form-group" style="margin:0"><label style="font-size:12px">&nbsp;</label>
-        <label style="font-size:12px;display:flex;align-items:center;gap:2px;height:30px"><input type="checkbox" name="share_parent_quota" id="ip-share" value="1"> 共享总部</label></div>
-        <div class="form-group" style="margin:0"><label style="font-size:12px">&nbsp;</label>
-        <button type="submit" class="btn btn-sm btn-primary" id="ip-btn">+ 添加IP</button>
-        <button type="button" class="btn btn-sm" id="ip-cancel" style="display:none" onclick="cancelEditIP()">取消</button></div>
+        <div class="form-row">
+            <div class="form-group"><label>所属商家</label>
+            <select name="merchant_id" id="ip-mid">{% for m in shooting_merchants %}<option value="{{ m.id }}">{{ m.name }}{% if m.linked_merchant_id %}（分厂）{% endif %}</option>{% endfor %}</select></div>
+            <div class="form-group"><label>IP名称 *</label>
+            <input type="text" name="name" id="ip-name" placeholder="如：小玲、李总" required></div>
+            <div class="form-group"><label>角色</label>
+            <select id="ip-role-select" onchange="var v=this.value;var inp=document.getElementById('ip-role');if(v==='__custom__'){inp.style.display='';inp.value='';inp.focus()}else{inp.style.display='none';inp.value=v}">
+                <option value="">选填</option><option>老板</option><option>合伙人</option><option>店长</option><option>主播</option><option>达人</option><option>厨师</option><option>员工</option><option>熟客/客户</option><option value="__custom__">✏️ 自定义…</option></select>
+            <input type="text" name="role" id="ip-role" placeholder="手动输入" style="display:none"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>性别</label>
+            <select name="gender" id="ip-gender"><option value="">选填</option><option>男</option><option>女</option></select></div>
+            <div class="form-group"><label>年龄段</label>
+            <select name="age_range" id="ip-age"><option value="">选填</option><option>20-30</option><option>30-40</option><option>40-50</option><option>50+</option></select></div>
+            <div class="form-group"><label>外貌特征</label>
+            <input type="text" name="appearance" id="ip-appearance" placeholder="如：高挑、圆脸、戴眼镜"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>人设风格</label>
+            <select id="ip-personality-select" onchange="var v=this.value;var inp=document.getElementById('ip-personality');if(v==='__custom__'){inp.style.display='';inp.value='';inp.focus()}else{inp.style.display='none';inp.value=v}">
+                <option value="">选填</option><option>亲和力强</option><option>专业严谨</option><option>幽默风趣</option><option>接地气</option><option>高端大气</option><option>温柔细腻</option><option value="__custom__">✏️ 自定义…</option></select>
+            <input type="text" name="personality" id="ip-personality" placeholder="手动输入" style="display:none"></div>
+            <div class="form-group"><label>说话风格</label>
+            <select id="ip-speaking-select" onchange="var v=this.value;var inp=document.getElementById('ip-speaking');if(v==='__custom__'){inp.style.display='';inp.value='';inp.focus()}else{inp.style.display='none';inp.value=v}">
+                <option value="">选填</option><option>快语速</option><option>温柔</option><option>激情</option><option>沉稳</option><option>活泼</option><option value="__custom__">✏️ 自定义…</option></select>
+            <input type="text" name="speaking_style" id="ip-speaking" placeholder="手动输入" style="display:none"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>擅长领域</label>
+            <input type="text" name="specialties" id="ip-specialties" placeholder="如：美食展示、产品讲解、剧情演绎"></div>
+            <div class="form-group"><label>偏好产品类型</label>
+            <input type="text" name="preferred_products" id="ip-products" placeholder="如：火锅食材、川菜、汽车配件"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>拍摄注意事项</label>
+            <input type="text" name="shooting_notes" id="ip-notes" placeholder="如：需要提词器、不爱拍特写"></div>
+            <div class="form-group"><label>月配额</label>
+            <input type="number" name="monthly_quota" id="ip-quota" value="25" min="0"></div>
+            <div class="form-group"><label>&nbsp;</label>
+            <label style="display:flex;align-items:center;gap:4px;height:36px"><input type="checkbox" name="share_parent_quota" id="ip-share" value="1"> 共享总部配额</label>
+            <label style="display:flex;align-items:center;gap:4px;height:36px"><input type="hidden" name="auto_schedule" value="0"><input type="checkbox" id="ip-auto" value="1" checked onclick="this.form.auto_schedule.value=this.checked?'1':'0'"> 参与自动排班</label></div>
+        </div>
+        <div style="display:flex;gap:8px">
+            <button type="submit" class="btn btn-sm btn-primary" id="ip-btn">+ 添加IP</button>
+            <button type="button" class="btn btn-sm" id="ip-cancel" style="display:none" onclick="cancelEditIP()">取消</button>
+        </div>
     </form>
     </div>
+
+    <!-- IP 列表 -->
     {% if all_ips %}
     <table class="table" style="font-size:13px;margin-top:8px">
-        <thead><tr><th>所属商家</th><th>IP名称</th><th>角色</th><th>月配额</th><th>共享</th><th>操作</th></tr></thead>
-        <tbody>{% for m in shooting_merchants %}{% if not m.linked_merchant_id %}
+        <thead><tr><th>所属商家</th><th>IP名称</th><th>角色</th><th>人设风格</th><th>擅长</th><th>月配额</th><th>共享</th><th>排班</th><th>操作</th></tr></thead>
+        <tbody>
+        {% for m in shooting_merchants %}{% if not m.linked_merchant_id %}
+        {# --- 一级：父商家自己的 IP --- #}
         {% set m_ips = merchant_ips.get(m.id, []) %}
-        {% if m_ips %}{% for ip in m_ips %}
-        <tr data-ip-id="{{ ip.id }}" data-ip-name="{{ ip.name }}" data-ip-role="{{ ip.role or '' }}" data-ip-mid="{{ ip.merchant_id }}" data-ip-quota="{{ ip.monthly_quota }}" data-ip-share="{{ ip.share_parent_quota }}">
+        {% for ip in m_ips %}{% if not ip.parent_ip_id %}
+        {% set children = ip_children.get(ip.id, []) %}
+        <tr data-ip-id="{{ ip.id }}" data-ip-name="{{ ip.name }}" data-ip-role="{{ ip.role or '' }}" data-ip-mid="{{ ip.merchant_id }}" data-ip-quota="{{ ip.monthly_quota }}" data-ip-share="{{ ip.share_parent_quota }}" data-ip-gender="{{ ip.gender or '' }}" data-ip-age="{{ ip.age_range or '' }}" data-ip-appearance="{{ ip.appearance or '' }}" data-ip-personality="{{ ip.personality or '' }}" data-ip-speaking="{{ ip.speaking_style or '' }}" data-ip-specialties="{{ ip.specialties or '' }}" data-ip-products="{{ ip.preferred_products or '' }}" data-ip-notes="{{ ip.shooting_notes or '' }}" data-ip-auto="{{ ip.auto_schedule or 1 }}" data-ip-parent="{{ ip.parent_ip_id or '' }}">
             <td><strong>{{ m.name }}</strong></td>
-            <td><strong>{{ ip.name }}</strong></td>
+            <td><strong>{{ ip.name }}</strong>{% if ip.parent_ip_id is none and children %}<span style="font-size:10px;color:#1890ff;margin-left:4px">主IP</span>{% endif %}</td>
             <td>{{ ip.role or '-' }}</td>
+            <td style="font-size:12px;color:#666">{{ ip.personality or '-' }}</td>
+            <td style="font-size:12px;color:#666;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ ip.specialties or '-' }}</td>
             <td>{{ ip.monthly_quota }}条</td>
             <td>{{ '是' if ip.share_parent_quota else '否' }}</td>
-            <td><a href="javascript:void(0)" onclick="editIPFrom(this)" class="btn btn-sm">✏️ 编辑</a> <a href="/schedule/ip/{{ ip.id }}/delete" class="btn btn-sm" style="color:#ff4d4f" onclick="return confirm('删除IP「{{ ip.name }}」？')">🗑 删除</a></td>
-        </tr>{% endfor %}{% endif %}
+            <td>{% if ip.auto_schedule == 0 %}<span style="color:#faad14;font-weight:600;font-size:11px">🔶 灵活</span>{% else %}<span style="color:#52c41a;font-size:11px">自动</span>{% endif %}</td>
+            <td style="white-space:nowrap"><a href="javascript:void(0)" onclick="editIPFrom(this)" class="btn btn-sm">✏️ 编辑</a> <a href="/schedule/ip/{{ ip.id }}/delete" class="btn btn-sm" style="color:#ff4d4f" onclick="return confirm('删除IP「{{ ip.name }}」？')">🗑</a></td>
+        </tr>
+        {# --- 二级：该主IP下的次IP --- #}
+        {% for sub in children %}
+        <tr style="background:#fafafa" data-ip-id="{{ sub.id }}" data-ip-name="{{ sub.name }}" data-ip-role="{{ sub.role or '' }}" data-ip-mid="{{ sub.merchant_id }}" data-ip-quota="{{ sub.monthly_quota }}" data-ip-share="{{ sub.share_parent_quota }}" data-ip-gender="{{ sub.gender or '' }}" data-ip-age="{{ sub.age_range or '' }}" data-ip-appearance="{{ sub.appearance or '' }}" data-ip-personality="{{ sub.personality or '' }}" data-ip-speaking="{{ sub.speaking_style or '' }}" data-ip-specialties="{{ sub.specialties or '' }}" data-ip-products="{{ sub.preferred_products or '' }}" data-ip-notes="{{ sub.shooting_notes or '' }}" data-ip-auto="{{ sub.auto_schedule or 1 }}" data-ip-parent="{{ sub.parent_ip_id or '' }}">
+            <td style="padding-left:20px;color:#999;font-size:12px">└ {{ ip.name }}的次IP</td>
+            <td><strong>{{ sub.name }}</strong></td>
+            <td>{{ sub.role or '-' }}</td>
+            <td style="font-size:12px;color:#666">{{ sub.personality or '-' }}</td>
+            <td style="font-size:12px;color:#666;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ sub.specialties or '-' }}</td>
+            <td>{{ sub.monthly_quota }}条</td>
+            <td>{{ '是' if sub.share_parent_quota else '否' }}</td>
+            <td>{% if sub.auto_schedule == 0 %}<span style="color:#faad14;font-weight:600;font-size:11px">🔶 灵活</span>{% else %}<span style="color:#52c41a;font-size:11px">自动</span>{% endif %}</td>
+            <td style="white-space:nowrap"><a href="javascript:void(0)" onclick="editIPFrom(this)" class="btn btn-sm">✏️ 编辑</a> <a href="/schedule/ip/{{ sub.id }}/delete" class="btn btn-sm" style="color:#ff4d4f" onclick="return confirm('删除IP「{{ sub.name }}」？')">🗑</a></td>
+        </tr>{% endfor %}
+        {% endif %}{% endfor %}
+        {# --- 子商家（分厂）的 IP --- #}
         {% for child in shooting_merchants %}{% if child.linked_merchant_id == m.id %}
         {% set c_ips = merchant_ips.get(child.id, []) %}
-        {% if c_ips %}{% for ip in c_ips %}
-        <tr style="background:#fafafa" data-ip-id="{{ ip.id }}" data-ip-name="{{ ip.name }}" data-ip-role="{{ ip.role or '' }}" data-ip-mid="{{ ip.merchant_id }}" data-ip-quota="{{ ip.monthly_quota }}" data-ip-share="{{ ip.share_parent_quota }}">
-            <td style="padding-left:20px;color:#999;font-size:12px">└ {{ child.name }} ← {{ m.name }}</td>
-            <td><strong>{{ ip.name }}</strong></td>
+        {% for ip in c_ips %}{% if not ip.parent_ip_id %}
+        {% set c_children = ip_children.get(ip.id, []) %}
+        <tr style="background:#fafafa" data-ip-id="{{ ip.id }}" data-ip-name="{{ ip.name }}" data-ip-role="{{ ip.role or '' }}" data-ip-mid="{{ ip.merchant_id }}" data-ip-quota="{{ ip.monthly_quota }}" data-ip-share="{{ ip.share_parent_quota }}" data-ip-gender="{{ ip.gender or '' }}" data-ip-age="{{ ip.age_range or '' }}" data-ip-appearance="{{ ip.appearance or '' }}" data-ip-personality="{{ ip.personality or '' }}" data-ip-speaking="{{ ip.speaking_style or '' }}" data-ip-specialties="{{ ip.specialties or '' }}" data-ip-products="{{ ip.preferred_products or '' }}" data-ip-notes="{{ ip.shooting_notes or '' }}" data-ip-auto="{{ ip.auto_schedule or 1 }}" data-ip-parent="{{ ip.parent_ip_id or '' }}">
+            <td style="padding-left:14px;color:#999;font-size:12px">└ {{ child.name }} ← {{ m.name }}</td>
+            <td><strong>{{ ip.name }}</strong>{% if ip.parent_ip_id is none and c_children %}<span style="font-size:10px;color:#1890ff;margin-left:4px">主IP</span>{% endif %}</td>
             <td>{{ ip.role or '-' }}</td>
+            <td style="font-size:12px;color:#666">{{ ip.personality or '-' }}</td>
+            <td style="font-size:12px;color:#666;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ ip.specialties or '-' }}</td>
             <td>{{ ip.monthly_quota }}条</td>
             <td>{{ '是' if ip.share_parent_quota else '否' }}</td>
-            <td><a href="javascript:void(0)" onclick="editIPFrom(this)" class="btn btn-sm">✏️ 编辑</a> <a href="/schedule/ip/{{ ip.id }}/delete" class="btn btn-sm" style="color:#ff4d4f" onclick="return confirm('删除IP「{{ ip.name }}」？')">🗑 删除</a></td>
-        </tr>{% endfor %}{% endif %}
+            <td>{% if ip.auto_schedule == 0 %}<span style="color:#faad14;font-weight:600;font-size:11px">🔶 灵活</span>{% else %}<span style="color:#52c41a;font-size:11px">自动</span>{% endif %}</td>
+            <td style="white-space:nowrap"><a href="javascript:void(0)" onclick="editIPFrom(this)" class="btn btn-sm">✏️ 编辑</a> <a href="/schedule/ip/{{ ip.id }}/delete" class="btn btn-sm" style="color:#ff4d4f" onclick="return confirm('删除IP「{{ ip.name }}」？')">🗑</a></td>
+        </tr>
+        {% for sub in c_children %}
+        <tr style="background:#fafafa" data-ip-id="{{ sub.id }}" data-ip-name="{{ sub.name }}" data-ip-role="{{ sub.role or '' }}" data-ip-mid="{{ sub.merchant_id }}" data-ip-quota="{{ sub.monthly_quota }}" data-ip-share="{{ sub.share_parent_quota }}" data-ip-gender="{{ sub.gender or '' }}" data-ip-age="{{ sub.age_range or '' }}" data-ip-appearance="{{ sub.appearance or '' }}" data-ip-personality="{{ sub.personality or '' }}" data-ip-speaking="{{ sub.speaking_style or '' }}" data-ip-specialties="{{ sub.specialties or '' }}" data-ip-products="{{ sub.preferred_products or '' }}" data-ip-notes="{{ sub.shooting_notes or '' }}" data-ip-auto="{{ sub.auto_schedule or 1 }}" data-ip-parent="{{ sub.parent_ip_id or '' }}">
+            <td style="padding-left:28px;color:#999;font-size:11px">  └ {{ ip.name }}的次IP</td>
+            <td>{{ sub.name }}</td>
+            <td>{{ sub.role or '-' }}</td>
+            <td style="font-size:12px;color:#666">{{ sub.personality or '-' }}</td>
+            <td style="font-size:12px;color:#666;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ sub.specialties or '-' }}</td>
+            <td>{{ sub.monthly_quota }}条</td>
+            <td>{{ '是' if sub.share_parent_quota else '否' }}</td>
+            <td>{% if sub.auto_schedule == 0 %}<span style="color:#faad14;font-weight:600;font-size:11px">🔶 灵活</span>{% else %}<span style="color:#52c41a;font-size:11px">自动</span>{% endif %}</td>
+            <td style="white-space:nowrap"><a href="javascript:void(0)" onclick="editIPFrom(this)" class="btn btn-sm">✏️ 编辑</a> <a href="/schedule/ip/{{ sub.id }}/delete" class="btn btn-sm" style="color:#ff4d4f" onclick="return confirm('删除IP「{{ sub.name }}」？')">🗑</a></td>
+        </tr>{% endfor %}
+        {% endif %}{% endfor %}
         {% endif %}{% endfor %}
         {% endif %}{% endfor %}</tbody>
     </table>{% endif %}
-</div>
-
-
-
-<!-- ========== 今日未排班提醒 ========== -->
-{% if not has_today %}
-<div style="background:#fff7e6;border:1px solid #ffa940;border-radius:8px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px">
-    <span style="font-size:18px">⚠️</span>
-    <span style="flex:1;font-size:13px">今日（{{ today_str }}）尚未排班。{% if last_date %}上次排班截止 {{ last_date }}。{% endif %}</span>
-</div>
-{% endif %}
-
-<!-- ========== AI 排班 ========== -->
-<div class="card" style="margin-bottom:12px">
-    <div style="display:flex;align-items:center;gap:16px">
-        <form method="post" action="/schedule/generate" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" onsubmit="return doGenerate()">
-            <input type="hidden" name="photographer_id" id="gen-pid" value="{{ sel_pid }}">
-            <button type="submit" class="btn btn-primary" id="gen-btn" {% if not shooting_merchants %}disabled{% endif %} style="{% if not has_today %}animation:pulse 2s infinite{% endif %}">生成排班</button>
-            <span id="gen-loading" style="display:none;color:#1890ff;font-size:13px">⏳ 正在生成排班...</span>
-            <a href="/schedule/clear-past" class="btn btn-sm" style="color:#999" onclick="return confirm('清除今天之前的所有未完成任务？')">🧹 清理过期</a>
-        </form>
-        <span style="font-size:12px;color:#999">从今天起30天自动排班。手动添加的任务🔒锁定不会被覆盖。</span>
-    </div>
 </div>

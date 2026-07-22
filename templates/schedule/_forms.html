@@ -181,22 +181,3 @@
     </div>
 </div>
 
-<!-- ========== 排班历史记录 ========== -->
-{% if done_tasks %}
-<div style="background:#fff;border-radius:8px;padding:24px;margin-top:16px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">
-    <h3 style="margin:0 0 8px">📋 排班历史记录（近30天已完成）</h3>
-    <div style="max-height:300px;overflow-y:auto">
-    <table class="table" style="font-size:12px">
-        <thead><tr><th>日期</th><th>时段</th><th>商家</th><th>摄影师</th><th>视频数</th><th>备注</th></tr></thead>
-        <tbody>{% for dt in done_tasks %}<tr>
-            <td>{{ dt.scheduled_date }}</td>
-            <td>{{ {'morning':'🌅上午','afternoon':'🌇下午','full_day':'🌤全天'}.get(dt.time_slot, dt.time_slot) }}</td>
-            <td>{{ dt.shooting_merchant.name if dt.shooting_merchant else dt.merchant_id }}</td>
-            <td>{{ dt.photographer.name if dt.photographer else '-' }}</td>
-            <td>{{ dt.video_count }}</td>
-            <td style="font-size:12px;color:#999">{{ dt.notes or '' }}</td>
-        </tr>{% endfor %}</tbody>
-    </table></div>
-</div>
-{% endif %}
-

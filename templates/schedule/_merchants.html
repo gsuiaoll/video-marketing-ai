@@ -84,7 +84,7 @@
                 </div>
             </div>
             <div class="form-group" style="margin-bottom:8px">
-                    <label>所属摄影师（可多选，留空则继承父商家）</label>
+                    <label>摄影师</label>
                     <div style="display:flex;gap:16px;flex-wrap:wrap;padding:4px 0">
                         {% for p in photographers %}
                         <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer">
@@ -92,17 +92,21 @@
                             {{ p.name }}
                         </label>
                         {% endfor %}
+                        <span style="font-size:11px;color:#999">（留空继承父商家）</span>
                     </div>
                 </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
                 <div class="form-group" style="margin-bottom:8px">
-                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-                        <input type="checkbox" name="need_shooting" value="1" id="m-need-shooting" checked onchange="document.getElementById('m-need-shooting-hidden').value=this.checked?'1':'0'">
-                        <input type="hidden" name="need_shooting" id="m-need-shooting-hidden" value="1">
-                        需要拍摄排班 <span style="font-size:11px;color:#999">（取消勾选则该商家不参与排班生成）</span>
-                    </label>
+                    <label>关联主商家</label>
+                    <select name="main_merchant_id" id="m-main">
+                        <option value="">无（仅排班）</option>
+                        {% for am in all_merchants %}
+                        <option value="{{ am.id }}">{{ am.name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
                 <div class="form-group" style="margin-bottom:8px">
-                    <label>关联商家（同一公司不同地点，共享月配额）</label>
+                    <label>关联父商家（分厂层级）</label>
                     <select name="linked_merchant_id" id="m-linked">
                         <option value="">无（独立商家）</option>
                         {% for sm in shooting_merchants %}
@@ -110,6 +114,22 @@
                         {% endfor %}
                     </select>
                 </div>
+                <div class="form-group" style="margin-bottom:8px">
+                    <label>排班模式</label>
+                    <div style="display:flex;gap:16px;padding:8px 12px;border:1px solid #d9d9d9;border-radius:6px;background:#fff">
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+                        <input type="checkbox" name="need_shooting" value="1" id="m-need-shooting" checked onchange="document.getElementById('m-need-shooting-hidden').value=this.checked?'1':'0'">
+                        <input type="hidden" name="need_shooting" id="m-need-shooting-hidden" value="1">
+                        需要拍摄
+                    </label>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+                        <input type="checkbox" name="auto_schedule" value="1" id="m-auto-schedule" checked onchange="document.getElementById('m-auto-schedule-hidden').value=this.checked?'1':'0'">
+                        <input type="hidden" name="auto_schedule" id="m-auto-schedule-hidden" value="1">
+                        自动排班
+                    </label>
+                    </div>
+                </div>
+            </div>
             </div>
             <input type="hidden" name="id" id="m-id">
             <div style="display:flex;gap:8px">
@@ -129,6 +149,7 @@
                 <th>摄影师</th>
                 <th>出镜IP</th>
                 <th>月配额</th>
+                <th>排班</th>
                 <th>拍摄</th>
                 <th>操作</th>
             </tr>
@@ -173,9 +194,10 @@
                     {% endif %}
                     {% endif %}
                 </td>
+                <td style="text-align:center">{% if m.auto_schedule == 0 %}<span style="color:#faad14;font-weight:600;font-size:11px">🔶 灵活</span>{% else %}<span style="color:#52c41a;font-size:11px">自动</span>{% endif %}</td>
                 <td style="text-align:center">{{ '✅' if (m.need_shooting is none or m.need_shooting == 1) else '❌' }}</td>
                 <td>
-                    <a href="javascript:void(0)" class="btn btn-sm" onclick="editMerchant({{ m.id }}, '{{ m.name|e }}', '{{ m.district or '' }}', '{{ m.contact_name or ''|e }}', {{ m.monthly_quota or 25 }}, '{{ (m.address or '')|e }}', {{ m.linked_merchant_id or 0 }}, [{% for p in merchant_photographers.get(m.id, []) %}{{ p.id }}{% if not loop.last %},{% endif %}{% endfor %}], {{ m.need_shooting if m.need_shooting is not none else 1 }})">编辑</a>
+                    <a href="javascript:void(0)" class="btn btn-sm" onclick="editMerchant({{ m.id }}, '{{ m.name|e }}', '{{ m.district or '' }}', '{{ m.contact_name or ''|e }}', {{ m.monthly_quota or 25 }}, '{{ (m.address or '')|e }}', {{ m.linked_merchant_id or 0 }}, [{% for p in merchant_photographers.get(m.id, []) %}{{ p.id }}{% if not loop.last %},{% endif %}{% endfor %}], {{ m.need_shooting if m.need_shooting is not none else 1 }}, {{ m.auto_schedule if m.auto_schedule is not none else 1 }}, {{ m.main_merchant_id or 0 }})">编辑</a>
                     <a href="/schedule/merchant/{{ m.id }}/delete" class="btn btn-sm" style="color:#ff4d4f" onclick="return confirm('确认删除「{{ m.name }}」及关联排班？')">删除</a>
                 </td>
             </tr>

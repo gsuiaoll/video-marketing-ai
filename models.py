@@ -51,6 +51,11 @@ class ShootingPhotographer(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
     phone = Column(String)
+    role = Column(String, default="fulltime")         # founder=创始人(不休), fulltime=全职, parttime=兼职, flexible=灵活(不自动排班)
+    days_off_per_week = Column(Integer, default=1)     # 每周休息天数
+    max_slots_per_day = Column(Integer, default=2)     # 每天最多拍摄时段数
+    auto_schedule = Column(Integer, default=1)          # 1=参与自动排班, 0=仅手动指派
+    preferences = Column(String, default="")            # 偏好/备注（擅长领域、不愿拍的类型等）
     status = Column(String, default="active")
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
 
@@ -68,8 +73,10 @@ class ShootingMerchant(Base):
     contact_name = Column(String)
     contact_phone = Column(String)
     monthly_quota = Column(Integer, default=25)
-    linked_merchant_id = Column(Integer, ForeignKey("shooting_merchants.id"), nullable=True)  # 同一公司不同地点
+    linked_merchant_id = Column(Integer, ForeignKey("shooting_merchants.id"), nullable=True)  # 同一公司不同地点（分厂→总部）
+    main_merchant_id = Column(Integer, ForeignKey("merchants.id"), nullable=True)  # 关联主商家表
     need_shooting = Column(Integer, default=1)  # 1=需要拍摄，0=不需要
+    auto_schedule = Column(Integer, default=1)   # 1=参与自动排班，0=仅手动（熟客IP的商家）
     status = Column(String, default="active")
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
 
@@ -188,6 +195,7 @@ class ShootingTask(Base):
     scheduled_date = Column(String)
     time_slot = Column(String, default="morning")
     video_count = Column(Integer, default=2)
+    actual_video_count = Column(Integer, nullable=True)  # 实际拍摄数（拍完填写）
     status = Column(String, default="scheduled")
     locked = Column(Integer, default=0)  # 1=手动锁定，生成时不覆盖
     notes = Column(Text)
@@ -199,12 +207,22 @@ class ShootingTask(Base):
 
 
 class ShootingIP(Base):
-    """出镜IP人物 — 商家旗下的出境拍摄人物，各可有独立配额"""
+    """出镜IP人物 — 商家旗下的出境拍摄人物，各可有独立配额和画像"""
     __tablename__ = "shooting_ips"
     id = Column(Integer, primary_key=True, autoincrement=True)
     merchant_id = Column(Integer, ForeignKey("shooting_merchants.id"))
+    parent_ip_id = Column(Integer, ForeignKey("shooting_ips.id"), nullable=True)  # 主IP为None，次IP指向主IP
     name = Column(String, nullable=False)       # IP人物名称
-    role = Column(String, default="")            # 角色（老板/员工/达人）
+    role = Column(String, default="")            # 角色（老板/员工/达人/熟客）
+    auto_schedule = Column(Integer, default=1)     # 1=参与自动排班, 0=仅手动指派
+    gender = Column(String, default="")           # 性别
+    age_range = Column(String, default="")        # 年龄段（20-30/30-40/40-50/50+）
+    appearance = Column(String, default="")       # 外貌特征
+    personality = Column(String, default="")      # 人设风格（亲和/专业/幽默/接地气…）
+    specialties = Column(String, default="")      # 擅长领域（美食展示/产品讲解/剧情演绎…）
+    speaking_style = Column(String, default="")   # 说话风格（快语速/温柔/激情/沉稳…）
+    preferred_products = Column(String, default="")  # 偏好拍摄产品类型
+    shooting_notes = Column(String, default="")   # 拍摄注意事项
     monthly_quota = Column(Integer, default=25)  # 单人月配额，0=共享总公司配额
     share_parent_quota = Column(Integer, default=0)  # 1=共享总公司配额
     status = Column(String, default="active")

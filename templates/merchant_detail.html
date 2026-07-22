@@ -101,6 +101,37 @@
         {% endif %}
     </div>
 
+    <!-- 出镜IP人物 -->
+    <div class="card card-full">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <h3 style="margin:0">👤 出镜IP人物 ({{ merchant_ips|length }})</h3>
+            <a href="/schedule" class="btn btn-primary btn-sm">管理IP</a>
+        </div>
+        {% if merchant_ips %}
+        <table class="table" style="font-size:13px">
+            <thead><tr><th>名称</th><th>角色</th><th>性别</th><th>年龄段</th><th>人设风格</th><th>说话风格</th><th>擅长领域</th><th>偏好产品</th><th>月配额</th><th>拍摄备注</th></tr></thead>
+            <tbody>
+            {% for ip in merchant_ips %}
+            <tr>
+                <td><strong>{{ ip.name }}</strong></td>
+                <td>{{ ip.role or '-' }}</td>
+                <td>{{ ip.gender or '-' }}</td>
+                <td>{{ ip.age_range or '-' }}</td>
+                <td>{{ ip.personality or '-' }}</td>
+                <td>{{ ip.speaking_style or '-' }}</td>
+                <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ ip.specialties or '-' }}</td>
+                <td>{{ ip.preferred_products or '-' }}</td>
+                <td>{{ ip.monthly_quota }}条{% if ip.share_parent_quota %}（共享）{% endif %}</td>
+                <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#666">{{ ip.shooting_notes or '-' }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">暂无出镜IP，<a href="/schedule">去排班页面添加</a></p>
+        {% endif %}
+    </div>
+
     <!-- 文案列表 -->
     <div class="card card-full">
         <h3>拍摄文案 ({{ scripts|length }})</h3>

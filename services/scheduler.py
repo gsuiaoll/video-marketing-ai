@@ -3,6 +3,7 @@ import calendar
 from datetime import date
 
 FAR_DISTRICTS = {"清远", "从化", "花都", "增城", "南沙", "佛山", "东莞", "中山", "惠州"}
+MIN_MERCHANT_GAP = 1  # 同一商家两次拍摄之间最少间隔天数（0=可连拍）
 
 
 def generate_schedule(merchants: list[dict], year: int, month: int,
@@ -152,6 +153,12 @@ def generate_schedule(merchants: list[dict], year: int, month: int,
     schedule = []
     fi = 0
     near_consumed = set()  # 已消费的 near_slots 索引
+    last_merchant_day = {}  # {merchant_id: day_idx} 上次排班日，用于强制最小间隔
+
+    def can_schedule_merchant(mid, day_idx):
+        """检查该商家是否满足最小间隔约束"""
+        last = last_merchant_day.get(mid, -999)
+        return (day_idx - last) > MIN_MERCHANT_GAP
 
     for day_idx in range(total_days):
         date = all_days[day_idx]
@@ -175,7 +182,7 @@ def generate_schedule(merchants: list[dict], year: int, month: int,
         while fi < len(far_slots) and day_idx in far_positions:
             fm = far_slots[fi]
             assigned = False
-            if not is_blocked(fm["id"], date, "full_day") and fm["id"] not in booked_merchants:
+            if not is_blocked(fm["id"], date, "full_day") and fm["id"] not in booked_merchants and can_schedule_merchant(fm["id"], day_idx):
                 pg = pick_photographer(fm)
                 if pg is not None and pg not in pg_on_far and pg not in pg_used_am and pg not in pg_used_pm:
                     tasks_today.append({
@@ -186,6 +193,7 @@ def generate_schedule(merchants: list[dict], year: int, month: int,
                     })
                     booked_merchants.add(fm["id"])
                     pg_on_far.add(pg)
+                    last_merchant_day[fm["id"]] = day_idx
                     assigned = True
             if assigned:
                 fi += 1
@@ -198,6 +206,22 @@ def generate_schedule(merchants: list[dict], year: int, month: int,
         if day_idx not in near_day_positions:
             available_pgs = []  # 跳过该天近途排班
 
+        def _find_near_slot(exclude_ids, slot_type):
+            """找一个可排的近途商家索引。必须满足严格间隔，宁愿空着也不连排。"""
+            for idx in range(len(near_slots)):
+                if idx in near_consumed:
+                    continue
+                m = near_slots[idx]
+                if m["id"] in exclude_ids:
+                    continue
+                if pg not in m["photographer_ids"]:
+                    continue
+                if is_blocked(m["id"], date, slot_type):
+                    continue
+                if can_schedule_merchant(m["id"], day_idx):
+                    return idx
+            return None  # 没有满足间隔的，留空
+
         for pg in available_pgs:
             # 跳过已被锁定占用的时段
             if pg in pg_used_am and pg in pg_used_pm:
@@ -206,18 +230,7 @@ def generate_schedule(merchants: list[dict], year: int, month: int,
             # — 找上午商家 —
             am_idx = None
             if pg not in pg_used_am:
-                for idx in range(len(near_slots)):
-                    if idx in near_consumed:
-                        continue
-                    m = near_slots[idx]
-                    if m["id"] in booked_merchants:
-                        continue
-                    if pg not in m["photographer_ids"]:
-                        continue
-                    if is_blocked(m["id"], date, "morning"):
-                        continue
-                    am_idx = idx
-                    break
+                am_idx = _find_near_slot(booked_merchants, "morning")
 
             if am_idx is None:
                 continue
@@ -231,23 +244,13 @@ def generate_schedule(merchants: list[dict], year: int, month: int,
                 "ip_id": pick_ip(am_m["id"]),
             })
             booked_merchants.add(am_m["id"])
+            last_merchant_day[am_m["id"]] = day_idx
             pg_used_am.add(pg)
 
-            # — 找下午商家（不同于上午）—
+            # — 找下午商家 —
             pm_idx = None
             if pg not in pg_used_pm:
-                for idx in range(len(near_slots)):
-                    if idx in near_consumed:
-                        continue
-                    m = near_slots[idx]
-                    if m["id"] in booked_merchants:
-                        continue
-                    if pg not in m["photographer_ids"]:
-                        continue
-                    if is_blocked(m["id"], date, "afternoon"):
-                        continue
-                    pm_idx = idx
-                    break
+                pm_idx = _find_near_slot(booked_merchants, "afternoon")
 
             if pm_idx is not None:
                 near_consumed.add(pm_idx)
@@ -259,6 +262,7 @@ def generate_schedule(merchants: list[dict], year: int, month: int,
                     "ip_id": pick_ip(pm_m["id"]),
                 })
                 booked_merchants.add(pm_m["id"])
+                last_merchant_day[pm_m["id"]] = day_idx
                 pg_used_pm.add(pg)
 
         if tasks_today:

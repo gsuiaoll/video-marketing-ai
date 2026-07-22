@@ -35,23 +35,69 @@ def list_merchants(request: Request, db: Session = Depends(get_db)):
         if m.linked_merchant_id:
             children_map.setdefault(m.linked_merchant_id, []).append(m)
 
-    # ── 出镜IP（通过 ShootingMerchant 名称匹配）──
+    # ── 出镜IP（多表联查：ShootingMerchant名称匹配 → IP层级展示）──
     from models import ShootingIP, ShootingMerchant
-    merchant_ip_map = {}  # merchant_id -> [ip_names]
+    merchant_ip_map = {}       # merchant_id -> [(ip_name, is_primary, parent_name)]
+    merchant_shooting = {}     # merchant_id -> {quota, auto_schedule, need_shooting}
+    merchant_is_shooting_only = set()  # 仅存在于排班表、不在主商家表的商家ID
+
     all_ips = db.query(ShootingIP).filter(ShootingIP.status == "active").all()
-    # 构建 ShootingMerchant name -> ip list
+    ip_name_by_id = {ip.id: ip.name for ip in all_ips}
     sm_ip_map = {}
     for ip in all_ips:
-        sm_ip_map.setdefault(ip.merchant_id, []).append(ip.name)
-    # 查询 ShootingMerchant，按名称匹配到 Merchant
+        sm_ip_map.setdefault(ip.merchant_id, []).append(ip)
+
     shooting_merchants = db.query(ShootingMerchant).filter(ShootingMerchant.status == "active").all()
-    sm_name_to_ips = {}
+
     for sm in shooting_merchants:
-        if sm.id in sm_ip_map:
-            sm_name_to_ips[sm.name] = sm_ip_map[sm.id]
-    for m in merchants:
-        if m.name in sm_name_to_ips:
-            merchant_ip_map[m.id] = sm_name_to_ips[m.name]
+        ips = sm_ip_map.get(sm.id, [])
+        primary_ips = [ip for ip in ips if not ip.parent_ip_id]
+        secondary_ips = [ip for ip in ips if ip.parent_ip_id]
+        ip_list = []
+        for ip in primary_ips:
+            ip_list.append((ip.name, True, None))
+            for sub in secondary_ips:
+                if sub.parent_ip_id == ip.id:
+                    ip_list.append((sub.name, False, ip.name))
+        for sub in secondary_ips:
+            if sub.parent_ip_id not in {ip.id for ip in primary_ips}:
+                ip_list.append((sub.name, False, ip_name_by_id.get(sub.parent_ip_id, '?')))
+
+        sd = {
+            "ips": ip_list,
+            "quota": sm.monthly_quota or 25,
+            "auto_schedule": sm.auto_schedule or 1,
+            "need_shooting": sm.need_shooting if sm.need_shooting is not None else 1,
+        }
+
+        # 通过外键 main_merchant_id 直连主商家表
+        if sm.main_merchant_id is not None:
+            merchant_ip_map[sm.main_merchant_id] = ip_list
+            merchant_shooting[sm.main_merchant_id] = sd
+        else:
+            # 仅存在于排班表（无主商家关联）
+            sm_id = sm.id + 10000
+            merchant_ip_map[sm_id] = ip_list
+            merchant_shooting[sm_id] = sd
+            merchant_is_shooting_only.add(sm_id)
+            extra = type('ShootingOnly', (), {})()
+            extra.id = sm_id
+            extra.name = sm.name
+            extra.district = sm.district or ""
+            extra.industry = ""
+            extra.need_shooting = sd["need_shooting"]
+            extra.monthly_quota = sd["quota"]
+            extra.linked_merchant_id = sm.linked_merchant_id
+            extra.products_dishes = ""
+            extra.service_features = ""
+            extra.business_model = ""
+            merchants.append(extra)
+
+    # 主商家按创建时间，仅排班商家追加末尾按名称
+    main_only = [m for m in merchants if m.id not in merchant_is_shooting_only]
+    extra_only = [m for m in merchants if m.id in merchant_is_shooting_only]
+    extra_only.sort(key=lambda m: m.name)
+    merchants[:] = main_only + extra_only
 
     # ── 短视频平台账号 (douyin + redbook) ──
     from models import DouyinAccount, RedBookAccount
@@ -97,6 +143,8 @@ def list_merchants(request: Request, db: Session = Depends(get_db)):
         "merchant_ip_map": merchant_ip_map,
         "merchant_platforms": merchant_platforms,
         "merchant_ads": merchant_ads,
+        "merchant_shooting": merchant_shooting,
+        "merchant_is_shooting_only": merchant_is_shooting_only,
     })
 
 
@@ -160,7 +208,7 @@ def merchant_detail(merchant_id: int, request: Request, db: Session = Depends(ge
         Video.created_at.desc()
     ).all()
 
-    from models import OceanEngineAccount, RedBookAccount, ADQAccount
+    from models import OceanEngineAccount, RedBookAccount, ADQAccount, ShootingIP, ShootingMerchant
     ad_accounts = db.query(OceanEngineAccount).filter(
         OceanEngineAccount.merchant_id == merchant_id, OceanEngineAccount.status == "active"
     ).all()
@@ -171,6 +219,18 @@ def merchant_detail(merchant_id: int, request: Request, db: Session = Depends(ge
         ADQAccount.merchant_id == merchant_id, ADQAccount.status == "active"
     ).all()
 
+    # 出镜IP（通过 ShootingMerchant 名称匹配）
+    shooting_merchant = db.query(ShootingMerchant).filter(
+        ShootingMerchant.name == merchant.name,
+        ShootingMerchant.status == "active"
+    ).first()
+    merchant_ips = []
+    if shooting_merchant:
+        merchant_ips = db.query(ShootingIP).filter(
+            ShootingIP.merchant_id == shooting_merchant.id,
+            ShootingIP.status == "active"
+        ).order_by(ShootingIP.name).all()
+
     templates = get_templates()
     return templates.TemplateResponse("merchant_detail.html", {
         "request": request,
@@ -180,7 +240,8 @@ def merchant_detail(merchant_id: int, request: Request, db: Session = Depends(ge
         "redbook_accounts": redbook_accounts,
         "adq_accounts": adq_accounts,
         "scripts": scripts,
-        "videos": videos
+        "videos": videos,
+        "merchant_ips": merchant_ips,
     })
 
 

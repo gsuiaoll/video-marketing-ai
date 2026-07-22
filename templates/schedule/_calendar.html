@@ -26,8 +26,8 @@
                     <span class="task-name">{{ am_task.shooting_merchant.name if am_task.shooting_merchant else '#' ~ am_task.merchant_id }}{% if am_task.ip %} · {{ am_task.ip.name }}{% endif %}</span>
                     <span class="task-pg">{{ am_task.photographer.name if am_task.photographer else '' }}</span>
                     <span class="task-status" onclick="event.stopPropagation()">
-                        {% if am_task.locked %}🔒{% endif %}<a href="/schedule/task/{{ am_task.id }}/done" class="task-action" title="完成">✅</a>
-                        <a href="/schedule/task/{{ am_task.id }}/delete" class="task-action" title="删除" onclick="return confirm('确认删除该排班？')">❌</a>
+                        {% if am_task.locked %}🔒{% endif %}<a href="javascript:void(0)" class="task-action" title="完成" onclick="markDone({{ am_task.id }},'{{ am_task.shooting_merchant.name if am_task.shooting_merchant else '#' ~ am_task.merchant_id }}',{{ am_task.video_count }})">✅</a>
+                        <a href="javascript:void(0)" class="task-action" title="取消排班" onclick="cancelTask({{ am_task.id }},'{{ am_task.shooting_merchant.name if am_task.shooting_merchant else '#' ~ am_task.merchant_id }}','{{ am_task.scheduled_date }}','{{ am_task.time_slot }}')">❌</a>
                     </span>
                 </div>
                 {% endfor %}
@@ -50,8 +50,8 @@
                     <span class="task-name">{{ pm_task.shooting_merchant.name if pm_task.shooting_merchant else '#' ~ pm_task.merchant_id }}{% if pm_task.ip %} · {{ pm_task.ip.name }}{% endif %}</span>
                     <span class="task-pg">{{ pm_task.photographer.name if pm_task.photographer else '' }}</span>
                     <span class="task-status" onclick="event.stopPropagation()">
-                        {% if pm_task.locked %}🔒{% endif %}<a href="/schedule/task/{{ pm_task.id }}/done" class="task-action" title="完成">✅</a>
-                        <a href="/schedule/task/{{ pm_task.id }}/delete" class="task-action" title="删除" onclick="return confirm('确认删除该排班？')">❌</a>
+                        {% if pm_task.locked %}🔒{% endif %}<a href="javascript:void(0)" class="task-action" title="完成" onclick="markDone({{ pm_task.id }},'{{ pm_task.shooting_merchant.name if pm_task.shooting_merchant else '#' ~ pm_task.merchant_id }}',{{ pm_task.video_count }})">✅</a>
+                        <a href="javascript:void(0)" class="task-action" title="取消排班" onclick="cancelTask({{ pm_task.id }},'{{ pm_task.shooting_merchant.name if pm_task.shooting_merchant else '#' ~ pm_task.merchant_id }}','{{ pm_task.scheduled_date }}','{{ pm_task.time_slot }}')">❌</a>
                     </span>
                 </div>
                 {% endfor %}
@@ -68,8 +68,8 @@
                     <span class="task-name">{{ task.shooting_merchant.name if task.shooting_merchant else '#' ~ task.merchant_id }}{% if task.ip %} · {{ task.ip.name }}{% endif %}</span>
                     <span class="task-pg">{{ task.photographer.name if task.photographer else '' }}</span>
                     <span class="task-status" onclick="event.stopPropagation()">
-                        {% if task.locked %}🔒{% endif %}<a href="/schedule/task/{{ task.id }}/done" class="task-action" title="完成">✅</a>
-                        <a href="/schedule/task/{{ task.id }}/delete" class="task-action" title="删除" onclick="return confirm('确认删除该排班？')">❌</a>
+                        {% if task.locked %}🔒{% endif %}<a href="javascript:void(0)" class="task-action" title="完成" onclick="markDone({{ task.id }},'{{ task.shooting_merchant.name if task.shooting_merchant else '#' ~ task.merchant_id }}',{{ task.video_count }})">✅</a>
+                        <a href="javascript:void(0)" class="task-action" title="取消排班" onclick="cancelTask({{ task.id }},'{{ task.shooting_merchant.name if task.shooting_merchant else '#' ~ task.merchant_id }}','{{ task.scheduled_date }}','{{ task.time_slot }}')">❌</a>
                     </span>
                 </div>
                 {% endif %}

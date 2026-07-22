@@ -5,15 +5,28 @@ function showPgForm() {
     document.getElementById('pg-name').value = '';
     document.getElementById('pg-phone').value = '';
     document.getElementById('pg-id').value = '';
+    document.getElementById('pg-role').value = 'fulltime';
+    document.getElementById('pg-days-off').value = '1';
+    document.getElementById('pg-max-slots').value = '2';
+    document.getElementById('pg-preferences').value = '';
     document.getElementById('pg-submit').textContent = '保存';
     document.getElementById('pg-form-el').action = '/schedule/photographer/new';
 }
-function editPg(id, name, phone) {
+function editPg(id, name, phone, role, daysOff, maxSlots, preferences, autoSchedule) {
     document.getElementById('pg-form').style.display = 'block';
     document.getElementById('show-pg-btn').style.display = 'none';
     document.getElementById('pg-id').value = id;
     document.getElementById('pg-name').value = name;
     document.getElementById('pg-phone').value = phone || '';
+    document.getElementById('pg-role').value = role || 'fulltime';
+    document.getElementById('pg-days-off').value = daysOff || 1;
+    document.getElementById('pg-max-slots').value = maxSlots || 2;
+    document.getElementById('pg-preferences').value = preferences || '';
+    document.getElementById('pg-auto-schedule').value = (autoSchedule !== undefined ? autoSchedule : 1);
+    // Show/hide flexible options
+    var flexOpts = document.getElementById('pg-flexible-opts');
+    if (role === 'flexible') { flexOpts.style.display = 'none'; }
+    else { flexOpts.style.display = ''; }
     document.getElementById('pg-submit').textContent = '保存修改';
     document.getElementById('pg-form-el').action = '/schedule/photographer/' + id + '/edit';
 }
@@ -96,23 +109,42 @@ function batchCancelExceptions() {
 }
 
 // ===== IP 编辑 =====
+function setSelectOrCustom(selectId, inputId, value, presets) {
+    var sel = document.getElementById(selectId);
+    var inp = document.getElementById(inputId);
+    if (presets.indexOf(value) >= 0) { sel.value = value; inp.style.display = 'none'; inp.value = ''; }
+    else if (value) { sel.value = '__custom__'; inp.style.display = ''; inp.value = value; }
+    else { sel.value = ''; inp.style.display = 'none'; inp.value = ''; }
+}
 function editIPFrom(el) {
     var tr = el.closest('tr');
-    editIP(tr.getAttribute('data-ip-id'), tr.getAttribute('data-ip-name'), tr.getAttribute('data-ip-role'), tr.getAttribute('data-ip-mid'), tr.getAttribute('data-ip-quota'), tr.getAttribute('data-ip-share'));
+    editIP(
+        tr.getAttribute('data-ip-id'), tr.getAttribute('data-ip-name'), tr.getAttribute('data-ip-role'),
+        tr.getAttribute('data-ip-mid'), tr.getAttribute('data-ip-quota'), tr.getAttribute('data-ip-share'),
+        tr.getAttribute('data-ip-gender'), tr.getAttribute('data-ip-age'), tr.getAttribute('data-ip-appearance'),
+        tr.getAttribute('data-ip-personality'), tr.getAttribute('data-ip-speaking'), tr.getAttribute('data-ip-specialties'),
+        tr.getAttribute('data-ip-products'), tr.getAttribute('data-ip-notes'), tr.getAttribute('data-ip-auto')
+    );
 }
-function editIP(id, name, role, mid, quota, share) {
+function editIP(id, name, role, mid, quota, share, gender, age, appearance, personality, speaking, specialties, products, notes, autoSched) {
     document.getElementById('ip-form-card').style.display = 'block';
     document.getElementById('ip-id').value = id;
     document.getElementById('ip-name').value = name;
-    var roleSelect = document.getElementById('ip-role-select');
-    var roleInput = document.getElementById('ip-role');
-    var presetRoles = ['老板','合伙人','店长','主播','达人','厨师','员工'];
-    if (presetRoles.indexOf(role) >= 0) { roleSelect.value = role; roleInput.style.display = 'none'; roleInput.value = ''; }
-    else if (role) { roleSelect.value = '__custom__'; roleInput.style.display = ''; roleInput.value = role; }
-    else { roleSelect.value = ''; roleInput.style.display = 'none'; roleInput.value = ''; }
+    setSelectOrCustom('ip-role-select', 'ip-role', role, ['老板','合伙人','店长','主播','达人','厨师','员工','熟客/客户']);
     document.getElementById('ip-mid').value = mid;
     document.getElementById('ip-quota').value = quota || 25;
-    document.getElementById('ip-share').checked = (share == 1);
+    document.getElementById('ip-share').checked = (share == '1');
+    document.getElementById('ip-gender').value = gender || '';
+    document.getElementById('ip-age').value = age || '';
+    document.getElementById('ip-appearance').value = appearance || '';
+    setSelectOrCustom('ip-personality-select', 'ip-personality', personality, ['亲和力强','专业严谨','幽默风趣','接地气','高端大气','温柔细腻']);
+    setSelectOrCustom('ip-speaking-select', 'ip-speaking', speaking, ['快语速','温柔','激情','沉稳','活泼']);
+    document.getElementById('ip-specialties').value = specialties || '';
+    document.getElementById('ip-products').value = products || '';
+    document.getElementById('ip-notes').value = notes || '';
+    var ipAutoCb = document.getElementById('ip-auto');
+    ipAutoCb.checked = (autoSched !== '0');
+    ipAutoCb.form.auto_schedule.value = ipAutoCb.checked ? '1' : '0';
     document.getElementById('ip-btn').textContent = '保存修改';
     document.getElementById('ip-form').action = '/schedule/ip/new';
     document.getElementById('ip-cancel').style.display = '';
@@ -121,14 +153,43 @@ function cancelEditIP() {
     document.getElementById('ip-form-card').style.display = 'none';
     document.getElementById('ip-id').value = '';
     document.getElementById('ip-name').value = '';
-    document.getElementById('ip-role-select').value = '';
-    document.getElementById('ip-role').value = '';
-    document.getElementById('ip-role').style.display = 'none';
+    setSelectOrCustom('ip-role-select', 'ip-role', '', []);
     document.getElementById('ip-quota').value = 25;
     document.getElementById('ip-share').checked = false;
+    document.getElementById('ip-gender').value = '';
+    document.getElementById('ip-age').value = '';
+    document.getElementById('ip-appearance').value = '';
+    setSelectOrCustom('ip-personality-select', 'ip-personality', '', []);
+    setSelectOrCustom('ip-speaking-select', 'ip-speaking', '', []);
+    document.getElementById('ip-specialties').value = '';
+    document.getElementById('ip-products').value = '';
+    document.getElementById('ip-notes').value = '';
+    var ipAutoCb2 = document.getElementById('ip-auto');
+    ipAutoCb2.checked = true;
+    ipAutoCb2.form.auto_schedule.value = '1';
     document.getElementById('ip-btn').textContent = '+ 添加IP';
     document.getElementById('ip-form').action = '/schedule/ip/new';
     document.getElementById('ip-cancel').style.display = 'none';
+}
+
+// ===== 取消排班（带原因） =====
+function markDone(id, name, vcount) {
+    var actual = prompt('「' + name + '」拍摄完成\n\n实际拍摄了多少条视频？（默认=' + vcount + '条）', vcount);
+    if (actual === null) return;
+    var n = parseInt(actual) || vcount;
+    window.location.href = '/schedule/task/' + id + '/done?actual=' + n;
+}
+
+function cancelTask(id, name, date, slot) {
+    var slotLabels = {morning: '上午', afternoon: '下午', full_day: '全天'};
+    var startDate = prompt('取消「' + name + '」的排班\n\n从哪天开始取消？（格式：YYYY-MM-DD）', date);
+    if (startDate === null) return;
+    var endDate = prompt('到哪天结束取消？（格式：YYYY-MM-DD，同一天则只取消当天）', date);
+    if (endDate === null) return;
+    if (startDate > endDate) { var tmp = startDate; startDate = endDate; endDate = tmp; }
+    var reason = prompt('取消原因（选填，如：客户出差、外出旅游）：');
+    if (reason === null) return;
+    window.location.href = '/schedule/task/' + id + '/cancel?reason=' + encodeURIComponent(reason || '') + '&start_date=' + startDate + '&end_date=' + endDate;
 }
 
 // ===== 屏蔽和移动 =====
@@ -183,7 +244,7 @@ function updateQuotaHint() {
     else { hint.textContent = '（公司月总目标视频数）'; document.getElementById('m-quota').min = 5; }
 }
 document.getElementById('m-linked').addEventListener('change', updateQuotaHint);
-function editMerchant(id, name, district, contact, quota, address, linkedId, pgIds, needShooting) {
+function editMerchant(id, name, district, contact, quota, address, linkedId, pgIds, needShooting, autoSchedule, mainMerchantId) {
     document.getElementById('add-form').style.display = 'block';
     document.getElementById('show-add-btn').style.display = 'none';
     document.getElementById('m-id').value = id;
@@ -193,12 +254,17 @@ function editMerchant(id, name, district, contact, quota, address, linkedId, pgI
     document.getElementById('m-quota').value = quota;
     document.getElementById('m-address').value = address || '';
     document.getElementById('m-linked').value = linkedId || '';
+    document.getElementById('m-main').value = mainMerchantId || '';
     document.querySelectorAll('.pg-cb').forEach(function(cb) { cb.checked = false; });
     if (pgIds && pgIds.length > 0) { pgIds.forEach(function(pid) { var cb = document.querySelector('.pg-cb[value=\"' + pid + '\"]'); if (cb) cb.checked = true; }); }
     var nsCb = document.getElementById('m-need-shooting');
     var nsHi = document.getElementById('m-need-shooting-hidden');
     nsCb.checked = (needShooting !== 0);
     nsHi.value = nsCb.checked ? '1' : '0';
+    var asCb = document.getElementById('m-auto-schedule');
+    var asHi = document.getElementById('m-auto-schedule-hidden');
+    asCb.checked = (autoSchedule !== 0);
+    asHi.value = asCb.checked ? '1' : '0';
     updateQuotaHint();
     document.getElementById('m-submit').textContent = '保存修改';
     document.getElementById('merchant-form').action = '/schedule/merchant/' + id + '/edit';
