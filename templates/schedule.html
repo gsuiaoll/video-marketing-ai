@@ -31,8 +31,7 @@
 </style>
 
 {% set active = request.query_params.get('tab', 'forms') %}
-<!-- ===== 日历+汇总+生成（文案tab隐藏）===== -->
-{% if active != 'scripts' %}
+<!-- ===== 公共头部：月历 + 汇总 + 生成（所有 tab 可见）===== -->
 
 <div class="page-header">
     <h1>📅 拍摄排班 — {{ month_name }}</h1>
@@ -132,12 +131,11 @@
     </div>
 </div>
 
-{% endif %}
 <!-- ========== Tab 栏 ========== -->
 <div style="border-bottom:2px solid #f0f0f0;margin:16px 0 0 0">
     <span class="sch-tab {% if active == 'forms' %}active{% endif %}" onclick="showScheduleTab('forms',this)">📋 排班操作</span>
     <span class="sch-tab {% if active == 'merchants' %}active{% endif %}" onclick="showScheduleTab('merchants',this)">🏪 商家 & 出镜IP</span>
-    <span class="sch-tab {% if active == 'scripts' %}active{% endif %}" onclick="showScheduleTab('scripts',this)">📝 文案</span>
+    <a href="/schedule?tab=scripts&v=2" class="sch-tab {% if active == 'scripts' %}active{% endif %}" style="text-decoration:none">📝 文案</a>
 </div>
 
 <!-- ========== Tab 内容 ========== -->
