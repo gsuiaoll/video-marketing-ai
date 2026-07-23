@@ -80,7 +80,7 @@ def _call_openclaw_local(prompt: str, system: str = "", enable_search: bool = Fa
 
     # 代理
     env = {**os.environ}
-    proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY") or "http://127.0.0.1:7897"
+    proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY") or ""
     if proxy:
         env.setdefault("HTTPS_PROXY", proxy)
         env.setdefault("HTTP_PROXY", proxy)

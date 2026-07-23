@@ -16,7 +16,9 @@ def load_settings() -> dict:
 
 
 def save_settings(data: dict):
-    SETTINGS_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    existing = _load_settings()
+    existing.update(data)
+    SETTINGS_FILE.write_text(json.dumps(existing, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def get_templates():

@@ -108,7 +108,8 @@ async def create_shooting_merchant(request: Request, db: Session = Depends(get_d
                     address=main_m.address or "",
                     contact_name=main_m.contact_name or "",
                     contact_phone=main_m.contact_phone or "",
-                    monthly_quota=main_m.monthly_quota or 25
+                    monthly_quota=main_m.monthly_quota or 25,
+                    main_merchant_id=int(from_main_id),
                 )
                 db.add(sm)
                 db.flush()
@@ -201,7 +202,7 @@ async def create_or_update_ip(request: Request, db: Session = Depends(get_db)):
     from routes.merchants import check_auth
     check_auth(request)
     form = await request.form()
-    ip_id = form.get("id", "")
+    ip_id = form.get("ip_id", form.get("id", ""))
     if ip_id and ip_id.isdigit():
         # 编辑模式
         ip = db.query(ShootingIP).filter(ShootingIP.id == int(ip_id)).first()
