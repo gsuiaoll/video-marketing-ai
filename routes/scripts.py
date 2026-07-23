@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from database import get_db
-from models import Script
+from models import Script, Merchant
 from services.ai_script import generate_script
 from routes.merchants import check_auth
 
@@ -19,10 +19,44 @@ def get_templates():
 @router.get("")
 def list_scripts(request: Request, db: Session = Depends(get_db)):
     check_auth(request)
+    from models import ShootingScript, ShootingTask, ShootingMerchant, ShootingIP
+    from sqlalchemy.orm import joinedload
+
     mid = request.query_params.get("merchant_id", "")
-    if mid:
-        return RedirectResponse(url=f"/schedule?tab=scripts&merchant_id={mid}", status_code=302)
-    return RedirectResponse(url="/schedule?tab=scripts", status_code=302)
+    search = request.query_params.get("search", "").strip()
+
+    # 查询所有 ShootingScript，带关联数据
+    query = db.query(ShootingScript).options(
+        joinedload(ShootingScript.task).joinedload(ShootingTask.shooting_merchant),
+        joinedload(ShootingScript.task).joinedload(ShootingTask.ip)
+    )
+    if mid and mid.isdigit():
+        # 通过 ShootingMerchant 名称匹配 merchant
+        merchant = db.query(Merchant).filter(Merchant.id == int(mid)).first()
+        if merchant:
+            sm = db.query(ShootingMerchant).filter(
+                ShootingMerchant.name == merchant.name, ShootingMerchant.status == "active"
+            ).first()
+            if sm:
+                task_ids = db.query(ShootingTask.id).filter(ShootingTask.merchant_id == sm.id).all()
+                if task_ids:
+                    query = query.filter(ShootingScript.task_id.in_([t[0] for t in task_ids]))
+    if search:
+        query = query.filter(ShootingScript.content.contains(search))
+
+    scripts = query.order_by(ShootingScript.created_at.desc()).limit(100).all()
+
+    from models import Merchant as MainMerchant
+    merchants = db.query(MainMerchant).filter(MainMerchant.status == "active").order_by(MainMerchant.name).all()
+
+    templates = get_templates()
+    return templates.TemplateResponse("scripts.html", {
+        "request": request,
+        "scripts": scripts,
+        "merchants": merchants,
+        "filter_mid": mid,
+        "search": search,
+    })
 
 
 @router.get("/generate")
