@@ -131,24 +131,25 @@
 </div>
 
 <!-- ========== Tab 栏 ========== -->
+{% set active = request.query_params.get('tab', 'forms') %}
 <div style="border-bottom:2px solid #f0f0f0;margin:16px 0 0 0">
-    <span class="sch-tab active" onclick="showScheduleTab('forms',this)">📋 排班操作</span>
-    <span class="sch-tab" onclick="showScheduleTab('merchants',this)">🏪 商家 & 出镜IP</span>
-    <span class="sch-tab" onclick="showScheduleTab('scripts',this)">📝 文案</span>
+    <span class="sch-tab {% if active == 'forms' %}active{% endif %}" onclick="showScheduleTab('forms',this)">📋 排班操作</span>
+    <span class="sch-tab {% if active == 'merchants' %}active{% endif %}" onclick="showScheduleTab('merchants',this)">🏪 商家 & 出镜IP</span>
+    <span class="sch-tab {% if active == 'scripts' %}active{% endif %}" onclick="showScheduleTab('scripts',this)">📝 文案</span>
 </div>
 
 <!-- ========== Tab 内容 ========== -->
-<div id="sch-forms" style="padding-top:16px">
+<div id="sch-forms" style="padding-top:16px;{% if active != 'forms' %}display:none{% endif %}">
 {% include 'schedule/_forms.html' %}
 </div>
 
-<div id="sch-merchants" style="display:none;padding-top:16px">
+<div id="sch-merchants" style="padding-top:16px;{% if active != 'merchants' %}display:none{% endif %}">
 {% include 'schedule/_photographers.html' %}
 {% include 'schedule/_merchants.html' %}
 {% include 'schedule/_ips.html' %}
 </div>
 
-<div id="sch-scripts" style="display:none;padding-top:16px">
+<div id="sch-scripts" style="padding-top:16px;{% if active != 'scripts' %}display:none{% endif %}">
 {% include 'schedule/_scripts_tab.html' %}
 </div>
 
@@ -194,13 +195,18 @@ function showScheduleTab(name, el) {
 }
 document.addEventListener('DOMContentLoaded', function() {
     var tab = new URLSearchParams(window.location.search).get('tab');
-    if (!tab) tab = localStorage.getItem('scheduleTab');
-    if (tab && tab !== 'forms') {
-        var tabs = document.querySelectorAll('.sch-tab');
-        for (var i = 0; i < tabs.length; i++) {
-            if (tabs[i].getAttribute('onclick') && tabs[i].getAttribute('onclick').indexOf(tab) >= 0) {
-                showScheduleTab(tab, tabs[i]);
-                break;
+    if (tab) {
+        localStorage.setItem('scheduleTab', tab);
+    } else {
+        tab = localStorage.getItem('scheduleTab');
+        if (tab && tab !== 'forms') {
+            // Non-active tab from localStorage, switch via JS
+            var tabs = document.querySelectorAll('.sch-tab');
+            for (var i = 0; i < tabs.length; i++) {
+                if (tabs[i].getAttribute('onclick') && tabs[i].getAttribute('onclick').indexOf(tab) >= 0) {
+                    showScheduleTab(tab, tabs[i]);
+                    break;
+                }
             }
         }
     }
