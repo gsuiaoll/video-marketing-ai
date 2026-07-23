@@ -9,9 +9,9 @@
                 <option value="{{ m.id }}" {% if request.query_params.get('merchant_id','') == m.id|string %}selected{% endif %}>{{ m.name }}</option>
                 {% endfor %}
             </select>
-            <input type="date" name="date_from" value="{{ request.query_params.get('date_from', today_str) }}" style="width:140px" title="开始日期">
+            <input type="date" name="date_from" value="{{ request.query_params.get('date_from') or today_str }}" style="width:140px" title="开始日期">
             <span style="font-size:12px;color:#999">至</span>
-            <input type="date" name="date_to" value="{{ request.query_params.get('date_to', end_30_str) }}" style="width:140px" title="结束日期">
+            <input type="date" name="date_to" value="{{ request.query_params.get('date_to') or end_30_str }}" style="width:140px" title="结束日期">
             <button type="submit" class="btn btn-sm btn-primary" style="font-size:12px">🔍 筛选</button>
             {% if request.query_params.get('merchant_id') or request.query_params.get('date_from') %}
             <a href="/schedule?tab=scripts" class="btn btn-sm" style="font-size:11px">清除</a>

@@ -298,9 +298,9 @@ def schedule_view(request: Request, db: Session = Depends(get_db)):
     from models import ShootingScript
     script_tasks, scripts_map_data = [], {}
     schedule_end_scripts = (today + timedelta(days=30)).strftime("%Y-%m-%d")
-    script_merchant_id = request.query_params.get("merchant_id", "")
-    script_date_from = request.query_params.get("date_from", today_str)
-    script_date_to = request.query_params.get("date_to", schedule_end_scripts)
+    script_merchant_id = request.query_params.get("merchant_id") or ""
+    script_date_from = request.query_params.get("date_from") or today_str
+    script_date_to = request.query_params.get("date_to") or schedule_end_scripts
     script_task_query = db.query(ShootingTask).options(
         joinedload(ShootingTask.shooting_merchant),
         joinedload(ShootingTask.photographer),
