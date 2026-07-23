@@ -133,25 +133,27 @@
 
 <!-- ========== Tab 栏 ========== -->
 <div style="border-bottom:2px solid #f0f0f0;margin:16px 0 0 0">
-    <span class="sch-tab {% if active == 'forms' %}active{% endif %}" onclick="showScheduleTab('forms',this)">📋 排班操作</span>
-    <span class="sch-tab {% if active == 'merchants' %}active{% endif %}" onclick="showScheduleTab('merchants',this)">🏪 商家 & 出镜IP</span>
-    <a href="/schedule?tab=scripts&v=2" class="sch-tab {% if active == 'scripts' %}active{% endif %}" style="text-decoration:none">📝 文案</a>
+    <a href="/schedule" class="sch-tab {% if active == 'forms' %}active{% endif %}" style="text-decoration:none">📋 排班操作</a>
+    <a href="/schedule?tab=merchants" class="sch-tab {% if active == 'merchants' %}active{% endif %}" style="text-decoration:none">🏪 商家 & 出镜IP</a>
+    <a href="/schedule?tab=scripts" class="sch-tab {% if active == 'scripts' %}active{% endif %}" style="text-decoration:none">📝 文案</a>
 </div>
 
 <!-- ========== Tab 内容 ========== -->
-<div id="sch-forms" style="padding-top:16px;{% if active != 'forms' %}display:none{% endif %}">
-{% include 'schedule/_forms.html' %}
+{% if active == 'scripts' %}
+<div id="sch-scripts" style="padding-top:16px">
+{% include 'schedule/_scripts_tab.html' %}
 </div>
-
-<div id="sch-merchants" style="padding-top:16px;{% if active != 'merchants' %}display:none{% endif %}">
+{% elif active == 'merchants' %}
+<div id="sch-merchants" style="padding-top:16px">
 {% include 'schedule/_photographers.html' %}
 {% include 'schedule/_merchants.html' %}
 {% include 'schedule/_ips.html' %}
 </div>
-
-<div id="sch-scripts" style="padding-top:16px;{% if active != 'scripts' %}display:none{% endif %}">
-{% include 'schedule/_scripts_tab.html' %}
+{% else %}
+<div id="sch-forms" style="padding-top:16px">
+{% include 'schedule/_forms.html' %}
 </div>
+{% endif %}
 
 <!-- ========== 实际拍摄数填报 ========== -->
 {% if recent_completed %}
