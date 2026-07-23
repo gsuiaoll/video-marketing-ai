@@ -31,8 +31,6 @@ from routes.schedule_tasks import router as schedule_tasks_router
 from routes.schedule_scripts import router as schedule_scripts_router
 from routes.advertising import router as advertising_router
 from routes.short_videos import router as short_videos_router
-from routes.scripts_library import router as scripts_library_router
-
 app.include_router(auth_router)
 app.include_router(dashboard_router)
 app.include_router(merchants_router)
@@ -40,7 +38,6 @@ app.include_router(scripts_router)
 app.include_router(videos_router)
 app.include_router(advertising_router)
 app.include_router(short_videos_router)
-app.include_router(scripts_library_router)
 app.include_router(schedule_router)
 app.include_router(schedule_crud_router)
 app.include_router(schedule_tasks_router)
