@@ -30,6 +30,7 @@
 .sch-tab.active { color:#1890ff; border-bottom-color:#1890ff; }
 </style>
 
+{% set active = request.query_params.get('tab', 'forms') %}
 <!-- ===== 日历+汇总+生成（文案tab隐藏）===== -->
 {% if active != 'scripts' %}
 
@@ -133,7 +134,6 @@
 
 {% endif %}
 <!-- ========== Tab 栏 ========== -->
-{% set active = request.query_params.get('tab', 'forms') %}
 <div style="border-bottom:2px solid #f0f0f0;margin:16px 0 0 0">
     <span class="sch-tab {% if active == 'forms' %}active{% endif %}" onclick="showScheduleTab('forms',this)">📋 排班操作</span>
     <span class="sch-tab {% if active == 'merchants' %}active{% endif %}" onclick="showScheduleTab('merchants',this)">🏪 商家 & 出镜IP</span>
