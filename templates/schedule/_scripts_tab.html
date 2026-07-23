@@ -1,15 +1,20 @@
 <div style="background:#fff;border-radius:8px;padding:16px 24px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
         <h3 style="margin:0">📝 拍摄文案（近30天排班 · 每条视频配1条文案）</h3>
-        <div style="display:flex;gap:8px;align-items:center">
-            {% set filter_mid = request.query_params.get('merchant_id', '') %}
-            {% if filter_mid %}
-            <span style="font-size:12px;background:#e6f7ff;padding:2px 8px;border-radius:4px">🔍 已筛选商家</span>
-            <a href="/schedule?tab=scripts" class="btn btn-sm" style="font-size:11px">全部商家</a>
-            {% else %}
-            <span style="font-size:12px;color:#999">全部商家</span>
+        <form method="get" action="/schedule" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <input type="hidden" name="tab" value="scripts">
+            <select name="merchant_id" style="width:130px;padding:4px 8px;font-size:12px" onchange="this.form.submit()">
+                <option value="">全部商家</option>
+                {% for m in shooting_merchants %}
+                <option value="{{ m.id }}" {% if request.query_params.get('merchant_id','') == m.id|string %}selected{% endif %}>{{ m.name }}</option>
+                {% endfor %}
+            </select>
+            <input type="date" name="date_from" value="{{ request.query_params.get('date_from', '') }}" style="width:130px;padding:4px 8px;font-size:12px" placeholder="从" onchange="this.form.submit()">
+            <input type="date" name="date_to" value="{{ request.query_params.get('date_to', '') }}" style="width:130px;padding:4px 8px;font-size:12px" placeholder="到" onchange="this.form.submit()">
+            {% if request.query_params.get('merchant_id') or request.query_params.get('date_from') %}
+            <a href="/schedule?tab=scripts" class="btn btn-sm" style="font-size:11px">清除</a>
             {% endif %}
-        </div>
+        </form>
     </div>
 
     {% if script_tasks %}
