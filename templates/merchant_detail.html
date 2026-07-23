@@ -4,7 +4,7 @@
 <div class="page-header">
     <h1>{{ merchant.name }}</h1>
     <div>
-        <a href="/scripts/generate?merchant_id={{ merchant.id }}" class="btn btn-primary">AI生成文案</a>
+        <a href="/schedule?tab=scripts&merchant_id={{ merchant.id }}" class="btn btn-primary">📝 拍摄文案</a>
         <a href="/douyin/connect/{{ merchant.id }}" class="btn btn-douyin">连接抖音</a>
         <a href="/merchants/{{ merchant.id }}/edit" class="btn btn-sm">编辑</a>
         <a href="/merchants/{{ merchant.id }}/delete" class="btn btn-sm" style="color:#ff4d4f" onclick="return confirm('确认删除「{{ merchant.name }}」？')">删除</a>

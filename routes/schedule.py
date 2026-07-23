@@ -298,6 +298,7 @@ def schedule_view(request: Request, db: Session = Depends(get_db)):
     from models import ShootingScript
     script_tasks, scripts_map_data = [], {}
     schedule_end_scripts = (today + timedelta(days=30)).strftime("%Y-%m-%d")
+    script_merchant_id = request.query_params.get("merchant_id", "")
     script_task_query = db.query(ShootingTask).options(
         joinedload(ShootingTask.shooting_merchant),
         joinedload(ShootingTask.photographer),
@@ -306,8 +307,10 @@ def schedule_view(request: Request, db: Session = Depends(get_db)):
         ShootingTask.scheduled_date >= today_str,
         ShootingTask.scheduled_date <= schedule_end_scripts,
         ShootingTask.status == "scheduled"
-    ).order_by(ShootingTask.scheduled_date).all()
-    script_tasks = script_task_query
+    )
+    if script_merchant_id and script_merchant_id.isdigit():
+        script_task_query = script_task_query.filter(ShootingTask.merchant_id == int(script_merchant_id))
+    script_tasks = script_task_query.order_by(ShootingTask.scheduled_date).all()
     st_ids = [t.id for t in script_tasks]
     if st_ids:
         st_scripts = db.query(ShootingScript).filter(ShootingScript.task_id.in_(st_ids)).order_by(ShootingScript.id).all()
