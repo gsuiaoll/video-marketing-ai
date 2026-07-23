@@ -282,6 +282,18 @@ def schedule_view(request: Request, db: Session = Depends(get_db)):
 
     quota_gap = total_quota - total_videos
 
+    # ── 冲突检测：同一天同一摄影师同时段被重复排 ──
+    conflicts = []
+    pg_day_slots = {}  # (pid, date, slot) -> [task_ids]
+    for t in tasks:
+        if t.status == "scheduled" and t.photographer_id:
+            key = (t.photographer_id, t.scheduled_date, t.time_slot)
+            pg_day_slots.setdefault(key, []).append(t.id)
+    for (pid, d, slot), tids in pg_day_slots.items():
+        if len(tids) > 1:
+            pg_name = next((p.name for p in photographers if p.id == pid), str(pid))
+            conflicts.append(f"{pg_name} 在 {d} {slot} 有 {len(tids)} 个任务冲突")
+
     # 文案数据（供文案tab使用）
     from models import ShootingScript
     script_tasks, scripts_map_data = [], {}
@@ -347,6 +359,7 @@ def schedule_view(request: Request, db: Session = Depends(get_db)):
         "recent_completed": recent_completed,
         "script_tasks": script_tasks,
         "scripts_map": scripts_map_data,
+        "conflicts": conflicts,
     })
 
 
@@ -491,18 +504,22 @@ async def do_generate(request: Request, db: Session = Depends(get_db)):
     for ct in cancelled_tasks:
         blocked.setdefault(ct.scheduled_date, {}).setdefault(ct.merchant_id, []).append(ct.time_slot)
 
-    # IP 冷却
+    # IP 冷却（汇总最近30天所有超额拍摄）
     ip_cooldown_until = {}
     for ip in db.query(ShootingIP).filter(ShootingIP.status == "active").all():
-        last_done = db.query(ShootingTask).filter(
+        recent_done = db.query(ShootingTask).filter(
             ShootingTask.ip_id == ip.id,
             ShootingTask.status == "done",
-            ShootingTask.actual_video_count.isnot(None)
-        ).order_by(ShootingTask.scheduled_date.desc()).first()
-        if last_done and last_done.actual_video_count:
-            surplus = max(0, (last_done.actual_video_count or 0) - (last_done.video_count or 0))
+            ShootingTask.actual_video_count.isnot(None),
+            ShootingTask.scheduled_date >= (today - timedelta(days=30)).strftime("%Y-%m-%d")
+        ).order_by(ShootingTask.scheduled_date.desc()).all()
+        if recent_done:
+            total_actual = sum(t.actual_video_count or 0 for t in recent_done)
+            total_planned = sum(t.video_count or 0 for t in recent_done)
+            surplus = total_actual - total_planned
             if surplus > 0:
-                cool_until = datetime.strptime(last_done.scheduled_date, "%Y-%m-%d") + timedelta(days=last_done.actual_video_count)
+                last_date = recent_done[0].scheduled_date
+                cool_until = datetime.strptime(last_date, "%Y-%m-%d") + timedelta(days=total_actual // 2)  # 按每天2条视频算冷却天数
                 ip_cooldown_until[ip.id] = cool_until.strftime("%Y-%m-%d")
 
     all_ips = db.query(ShootingIP).filter(

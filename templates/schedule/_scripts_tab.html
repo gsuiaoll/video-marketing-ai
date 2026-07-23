@@ -45,7 +45,7 @@
                 <input type="hidden" name="topic" class="ai-topic-input">
                 <button type="submit" class="btn btn-sm" style="font-size:11px;white-space:nowrap;color:#1890ff" onclick="var row=this.closest('div');var t=row.querySelector('input[name=topic]');if(t)this.form.querySelector('.ai-topic-input').value=t.value;return confirm('AI为此条视频生成文案？')">🤖 AI写</button>
             </form>
-            <form method="post" action="/schedule/script/new" style="display:none" id="script-form-{{ t.id }}-{{ vidx }}">
+            <form method="post" action="/schedule/script/new" style="display:none" id="script-form-{{ t.id }}-{{ vidx }}" data-script-form>
                 <input type="hidden" name="task_id" value="{{ t.id }}">
             </form>
             {% endif %}
