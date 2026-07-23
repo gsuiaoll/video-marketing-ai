@@ -4,6 +4,7 @@
 启动: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 """
 
+import asyncio
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
@@ -30,6 +31,7 @@ from routes.schedule_tasks import router as schedule_tasks_router
 from routes.schedule_scripts import router as schedule_scripts_router
 from routes.advertising import router as advertising_router
 from routes.short_videos import router as short_videos_router
+from routes.scripts_library import router as scripts_library_router
 
 app.include_router(auth_router)
 app.include_router(dashboard_router)
@@ -38,6 +40,7 @@ app.include_router(scripts_router)
 app.include_router(videos_router)
 app.include_router(advertising_router)
 app.include_router(short_videos_router)
+app.include_router(scripts_library_router)
 app.include_router(schedule_router)
 app.include_router(schedule_crud_router)
 app.include_router(schedule_tasks_router)
@@ -47,6 +50,20 @@ app.include_router(cs_router)
 app.include_router(settings_router)
 
 
+async def _weekly_refresh_loop():
+    """后台任务：每 7 天执行一次商家画像批量刷新"""
+    # 首次启动后等待 1 小时再开始，避免阻塞启动流程
+    await asyncio.sleep(3600)
+    while True:
+        try:
+            from scripts.weekly_refresh import run_weekly_refresh
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(None, run_weekly_refresh)
+        except Exception as e:
+            print(f"[WeeklyRefresh] Error: {e}")
+        await asyncio.sleep(7 * 24 * 3600)
+
+
 @app.on_event("startup")
 def startup():
     """启动时初始化数据库"""
@@ -54,6 +71,9 @@ def startup():
     print("[OK] Database initialized")
     db_path = BASE_DIR / "data" / "app.db"
     print(f"  DB file: {db_path}")
+    # 启动每周商家画像刷新后台任务
+    loop = asyncio.get_event_loop()
+    loop.create_task(_weekly_refresh_loop())
 
 
 @app.get("/")

@@ -96,8 +96,43 @@
 </div>
 {% endif %}
 
-<!-- ====== 本地上传视频列表 ====== -->
+<!-- ====== 本地上传视频卡片视图（所有平台） ====== -->
 {% if local_videos %}
+{% set plat_colors = {'douyin':'#fe2c55','redbook':'#ff2442','shipinhao':'#07c160','tiktok':'#000','facebook':'#1877f2'} %}
+<div class="card" style="margin-bottom:16px">
+    <h4 style="margin:0 0 12px">📁 本地上传视频</h4>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">
+    {% for v in local_videos %}
+    {% set pc = plat_colors.get(current_platform, '#666') %}
+    <div style="border:1px solid #f0f0f0;border-radius:8px;overflow:hidden;background:#fff">
+        <div style="height:120px;background:linear-gradient(135deg,{{ pc }}22,{{ pc }}44);display:flex;align-items:center;justify-content:center">
+            <span style="font-size:36px">🎬</span>
+        </div>
+        <div style="padding:10px 12px">
+            <strong style="font-size:13px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ v.title }}">{{ v.title }}</strong>
+            <div style="font-size:11px;color:#999;margin-top:4px">{{ v.created_at.strftime('%Y-%m-%d %H:%M') if v.created_at else '' }}</div>
+            {% if v.description %}
+            <div style="font-size:11px;color:#666;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ v.description }}">{{ v.description }}</div>
+            {% endif %}
+            {% if v.tags %}
+            <div style="font-size:10px;color:#999;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🏷 {{ v.tags }}</div>
+            {% endif %}
+            <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+                {% if v.publish_status %}<span class="badge badge-green" style="font-size:10px">✓ 已发布</span>{% else %}<span class="badge badge-yellow" style="font-size:10px">待发布</span>{% endif %}
+                <span style="margin-left:auto;font-size:10px;color:#999">{{ v.merchant.name if v.merchant else '-' }}</span>
+            </div>
+            <div style="margin-top:8px;display:flex;gap:4px">
+                <a href="/videos/play/{{ v.id }}" target="_blank" class="btn btn-sm" style="font-size:10px">▶ 播放</a>
+                <a href="/videos/{{ v.id }}/publish{{ qmall }}" class="btn btn-sm {{ 'btn-primary' if not v.publish_status else '' }}" style="font-size:10px">{{ '取消' if v.publish_status else '发布' }}</a>
+                <a href="/videos/{{ v.id }}/delete{{ qmall }}" style="color:#ff4d4f;margin-left:4px;font-size:10px" onclick="return confirm('确认删除？')">✕</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    </div>
+</div>
+
+<!-- ====== 本地上传视频列表（表格详情） ====== -->
 <table class="table" style="font-size:13px">
     <thead><tr>
         <th>标题</th><th>商家</th><th>平台</th><th>描述</th><th>标签</th><th>发布</th><th>时间</th><th>操作</th>

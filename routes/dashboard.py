@@ -2,9 +2,9 @@
 from datetime import date, timedelta
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, desc
 from database import get_db
-from models import Merchant, Script, Video, DouyinAccount, CSMessage, ShootingTask, OceanEngineAccount
+from models import Merchant, Script, Video, DouyinAccount, CSMessage, ShootingTask, OceanEngineAccount, ShootingScript, ShootingIP, ShootingMerchant
 
 router = APIRouter(tags=["仪表盘"])
 
@@ -96,6 +96,49 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                                        last_month_start.strftime("%Y-%m-%d"),
                                        last_month_end.strftime("%Y-%m-%d"))
 
+    # ── Feature 1: 本月 vs 上月实际完成拍摄（status='done'）──
+    this_month_done = qst.filter(
+        ShootingTask.status == 'done',
+        ShootingTask.scheduled_date >= this_month_start.strftime("%Y-%m-%d")
+    ).count()
+    last_month_done = qst.filter(
+        ShootingTask.status == 'done',
+        ShootingTask.scheduled_date >= last_month_start.strftime("%Y-%m-%d"),
+        ShootingTask.scheduled_date <= last_month_end.strftime("%Y-%m-%d")
+    ).count()
+
+    # ── Feature 1: 商家排行 — 本月完成拍摄数 Top 10 ──
+    merchant_ranking = db.query(
+        ShootingMerchant.name,
+        func.count(ShootingTask.id).label('cnt')
+    ).join(ShootingTask, ShootingTask.merchant_id == ShootingMerchant.id).filter(
+        ShootingTask.status == 'done',
+        ShootingTask.scheduled_date >= this_month_start.strftime("%Y-%m-%d")
+    ).group_by(ShootingMerchant.id).order_by(desc('cnt')).limit(10).all()
+
+    # ── Feature 1: IP 使用率 — 出镜 IP Top 10 ──
+    ip_usage = db.query(
+        ShootingIP.name,
+        ShootingIP.role,
+        func.count(ShootingTask.id).label('cnt')
+    ).join(ShootingTask, ShootingTask.ip_id == ShootingIP.id).filter(
+        ShootingTask.ip_id.isnot(None)
+    ).group_by(ShootingIP.id).order_by(desc('cnt')).limit(10).all()
+
+    # ── Feature 1: 拍摄文案统计 ──
+    total_shooting_scripts = db.query(ShootingScript).count()
+    ai_scripts = db.query(ShootingScript).filter(ShootingScript.source == 'ai').count()
+    manual_scripts = total_shooting_scripts - ai_scripts
+    ai_pct = round(ai_scripts / total_shooting_scripts * 100) if total_shooting_scripts > 0 else 0
+
+    # ── Feature 1: 商家画像完善率 ──
+    total_active_global = db.query(Merchant).filter(Merchant.status == 'active').count()
+    profiled_global = db.query(Merchant).filter(
+        Merchant.status == 'active',
+        (Merchant.business_model != '') | (Merchant.products_dishes != '')
+    ).count()
+    profile_pct = round(profiled_global / total_active_global * 100) if total_active_global > 0 else 0
+
     # 投放消耗
     ad_cost = None
     try:
@@ -140,4 +183,12 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         "this_month_scripts": this_month_scripts, "last_month_scripts": last_month_scripts,
         "this_month_videos": this_month_videos, "last_month_videos": last_month_videos,
         "this_month_shots": this_month_shots, "last_month_shots": last_month_shots,
+        "this_month_done": this_month_done, "last_month_done": last_month_done,
+        "merchant_ranking": merchant_ranking,
+        "ip_usage": ip_usage,
+        "total_shooting_scripts": total_shooting_scripts,
+        "ai_scripts": ai_scripts, "manual_scripts": manual_scripts,
+        "ai_pct": ai_pct,
+        "total_active_global": total_active_global,
+        "profile_pct": profile_pct, "profiled_merchants": profiled_global,
     })

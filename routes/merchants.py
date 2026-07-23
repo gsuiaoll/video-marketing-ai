@@ -242,6 +242,9 @@ def merchant_detail(merchant_id: int, request: Request, db: Session = Depends(ge
         "scripts": scripts,
         "videos": videos,
         "merchant_ips": merchant_ips,
+        "competitor_url": None,
+        "competitor_result": None,
+        "competitor_error": None,
     })
 
 
@@ -288,6 +291,85 @@ def delete_platform_account(account_id: int, request: Request, db: Session = Dep
         acc.status = "inactive"
         db.commit()
     return RedirectResponse(url=f"/merchants/{acc.merchant_id}" if acc else "/merchants", status_code=302)
+
+
+@router.post("/{merchant_id}/competitor-analysis")
+async def competitor_analysis(merchant_id: int, request: Request, db: Session = Depends(get_db)):
+    """竞品分析 — 输入竞品抖音号链接，用浏览器自动化分析其视频风格和爆款模式"""
+    check_auth(request)
+    merchant = db.query(Merchant).filter(Merchant.id == merchant_id).first()
+    if not merchant:
+        raise HTTPException(status_code=404, detail="商家不存在")
+
+    form = await request.form()
+    competitor_url = form.get("competitor_url", "").strip()
+
+    competitor_result = None
+    competitor_error = None
+    if competitor_url:
+        try:
+            from services.ai_script import call_browser
+            competitor_result = call_browser(
+                competitor_url,
+                "分析这个抖音号的视频风格、爆款模式"
+            )
+            if not competitor_result:
+                competitor_error = "分析未返回结果，请检查链接是否有效"
+        except Exception as e:
+            competitor_error = f"分析失败：{str(e)}"
+    else:
+        competitor_error = "请输入竞品链接"
+
+    # Re-query all the same data as merchant_detail
+    douyin_accounts = db.query(DouyinAccount).filter(
+        DouyinAccount.merchant_id == merchant_id
+    ).all()
+
+    scripts = db.query(Script).filter(Script.merchant_id == merchant_id).order_by(
+        Script.created_at.desc()
+    ).all()
+
+    videos = db.query(Video).filter(Video.merchant_id == merchant_id).order_by(
+        Video.created_at.desc()
+    ).all()
+
+    from models import OceanEngineAccount, RedBookAccount, ADQAccount, ShootingIP, ShootingMerchant
+    ad_accounts = db.query(OceanEngineAccount).filter(
+        OceanEngineAccount.merchant_id == merchant_id, OceanEngineAccount.status == "active"
+    ).all()
+    redbook_accounts = db.query(RedBookAccount).filter(
+        RedBookAccount.merchant_id == merchant_id, RedBookAccount.status == "active"
+    ).all()
+    adq_accounts = db.query(ADQAccount).filter(
+        ADQAccount.merchant_id == merchant_id, ADQAccount.status == "active"
+    ).all()
+
+    shooting_merchant = db.query(ShootingMerchant).filter(
+        ShootingMerchant.name == merchant.name,
+        ShootingMerchant.status == "active"
+    ).first()
+    merchant_ips = []
+    if shooting_merchant:
+        merchant_ips = db.query(ShootingIP).filter(
+            ShootingIP.merchant_id == shooting_merchant.id,
+            ShootingIP.status == "active"
+        ).order_by(ShootingIP.name).all()
+
+    templates = get_templates()
+    return templates.TemplateResponse("merchant_detail.html", {
+        "request": request,
+        "merchant": merchant,
+        "douyin_accounts": douyin_accounts,
+        "ad_accounts": ad_accounts,
+        "redbook_accounts": redbook_accounts,
+        "adq_accounts": adq_accounts,
+        "scripts": scripts,
+        "videos": videos,
+        "merchant_ips": merchant_ips,
+        "competitor_url": competitor_url,
+        "competitor_result": competitor_result,
+        "competitor_error": competitor_error,
+    })
 
 
 @router.get("/{merchant_id}/edit")

@@ -101,6 +101,24 @@
         {% endif %}
     </div>
 
+    <!-- 竞品分析 -->
+    <div class="card card-full">
+        <h3>🔍 竞品分析</h3>
+        <form method="post" action="/merchants/{{ merchant.id }}/competitor-analysis" style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+            <input type="text" name="competitor_url" placeholder="输入竞品抖音号/TikTok主页链接..." style="flex:1;padding:8px 12px;border:1px solid #d9d9d9;border-radius:6px;font-size:14px" value="{{ competitor_url or '' }}">
+            <button type="submit" class="btn btn-primary">🔍 分析竞品</button>
+        </form>
+        {% if competitor_error %}
+        <div style="padding:12px;background:#fff2f0;border:1px solid #ffccc7;border-radius:6px;color:#ff4d4f;font-size:13px">{{ competitor_error }}</div>
+        {% endif %}
+        {% if competitor_result %}
+        <div style="padding:16px;background:#f6ffed;border:1px solid #b7eb8f;border-radius:6px;margin-top:8px">
+            <div style="font-size:13px;color:#52c41a;margin-bottom:8px">✅ 分析完成</div>
+            <div style="font-size:14px;line-height:1.8;white-space:pre-wrap">{{ competitor_result }}</div>
+        </div>
+        {% endif %}
+    </div>
+
     <!-- 出镜IP人物 -->
     <div class="card card-full">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
