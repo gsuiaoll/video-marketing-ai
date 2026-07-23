@@ -30,7 +30,8 @@
 .sch-tab.active { color:#1890ff; border-bottom-color:#1890ff; }
 </style>
 
-<!-- ===== 公共头部：月历 + 汇总 + 生成（所有 tab 可见）===== -->
+<!-- ===== 日历+汇总+生成（文案tab隐藏）===== -->
+{% if active != 'scripts' %}
 
 <div class="page-header">
     <h1>📅 拍摄排班 — {{ month_name }}</h1>
@@ -130,6 +131,7 @@
     </div>
 </div>
 
+{% endif %}
 <!-- ========== Tab 栏 ========== -->
 {% set active = request.query_params.get('tab', 'forms') %}
 <div style="border-bottom:2px solid #f0f0f0;margin:16px 0 0 0">
