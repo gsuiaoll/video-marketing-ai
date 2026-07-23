@@ -247,6 +247,7 @@ async def create_or_update_ip(request: Request, db: Session = Depends(get_db)):
                 share_parent_quota=1 if form.get("share_parent_quota") == "1" else 0,
                 auto_schedule=1 if form.get("auto_schedule", "1") == "1" else 0,
             ))
+            db.flush()  # 先写入DB，否则下面查不到
             # 设置主IP层级
             parent_raw = form.get("parent_ip_id", "")
             if parent_raw:

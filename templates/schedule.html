@@ -207,28 +207,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<div id="block-popup" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:999;justify-content:center;align-items:center">
-    <div style="background:#fff;border-radius:8px;padding:24px;min-width:320px;box-shadow:0 8px 24px rgba(0,0,0,0.15)">
-        <h4 style="margin:0 0 16px">🔒 屏蔽时间段 — <span id="block-date-label"></span> <span id="block-slot-label"></span></h4>
-        <form method="post" action="/schedule/block">
-            <input type="hidden" name="date" id="block-date"><input type="hidden" name="time_slot" id="block-slot">
-            <div class="form-group"><label>选择商家</label><select name="merchant_id" style="width:100%">{% for m in shooting_merchants %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}</select></div>
-            <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn btn-sm" onclick="document.getElementById('block-popup').style.display='none'">取消</button><button type="submit" class="btn btn-primary btn-sm" style="background:#ff4d4f">确认屏蔽</button></div>
-        </form>
-    </div>
-</div>
-
-<div id="move-popup" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:999;justify-content:center;align-items:center">
-    <div style="background:#fff;border-radius:8px;padding:24px;min-width:320px;box-shadow:0 8px 24px rgba(0,0,0,0.15)">
-        <h4 style="margin:0 0 16px">↔️ 调整排班 — <span id="move-name"></span></h4>
-        <form method="post" id="move-form">
-            <div class="form-group"><label>新日期</label><input type="date" name="date" id="move-date" required style="width:100%"></div>
-            <div class="form-group"><label>时段</label><select name="time_slot" id="move-slot" style="width:100%"><option value="morning">🌅 上午</option><option value="afternoon">🌇 下午</option><option value="full_day">🌤️ 全天</option></select></div>
-            <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn btn-sm" onclick="document.getElementById('move-popup').style.display='none'">取消</button><button type="submit" class="btn btn-primary btn-sm">确认移动</button></div>
-        </form>
-    </div>
-</div>
-
 <script>
 var TODAY = '{{ today_str }}';
 var TOMORROW = '{{ tomorrow_str }}';

@@ -38,7 +38,8 @@ def run_weekly_refresh():
                     industry=m.industry or ''
                 )
                 if result and '近期情况' in result:
-                    m.recent_updates = result['近期情况']
+                    from datetime import datetime
+                    m.recent_updates = (m.recent_updates or '') + f"\n[{datetime.now().strftime('%Y-%m-%d')}] {result['近期情况']}"
                     db.commit()
                     updated += 1
                     print(f"  [OK] {m.name}")
