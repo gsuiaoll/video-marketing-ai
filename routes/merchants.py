@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from database import get_db
-from models import Merchant, DouyinAccount, Script, Video, RedBookAccount, ADQAccount
+from models import Merchant, DouyinAccount, Script, Video, RedBookAccount, ADQAccount, OceanEngineAccount
 
 router = APIRouter(prefix="/merchants", tags=["商家"])
 
@@ -541,6 +541,9 @@ def delete_merchant(merchant_id: int, request: Request, db: Session = Depends(ge
     db.query(DouyinAccount).filter(DouyinAccount.merchant_id == merchant_id).delete()
     db.query(Script).filter(Script.merchant_id == merchant_id).delete()
     db.query(Video).filter(Video.merchant_id == merchant_id).delete()
+    db.query(RedBookAccount).filter(RedBookAccount.merchant_id == merchant_id).delete()
+    db.query(ADQAccount).filter(ADQAccount.merchant_id == merchant_id).delete()
+    db.query(OceanEngineAccount).filter(OceanEngineAccount.merchant_id == merchant_id).delete()
     db.delete(merchant)
     db.commit()
     return RedirectResponse(url="/merchants", status_code=302)

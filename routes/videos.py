@@ -1,4 +1,3 @@
-import shutil
 from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, Form
 from fastapi.responses import RedirectResponse, FileResponse
@@ -62,7 +61,7 @@ async def upload_video(
 
     VIDEO_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     file_ext = Path(file.filename).suffix if file.filename else ".mp4"
-    safe_name = f"{merchant_id}_{title or 'video'}_{file.filename}"
+    safe_name = f"{merchant_id}_{title or 'video'}_{Path(file.filename).name}"
     file_path = VIDEO_UPLOAD_DIR / safe_name
     file_path.write_bytes(content)
 
