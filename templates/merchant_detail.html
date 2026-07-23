@@ -150,29 +150,27 @@
         {% endif %}
     </div>
 
-    <!-- 文案列表 -->
+    <!-- 拍摄文案（来自排班系统） -->
     <div class="card card-full">
-        <h3>拍摄文案 ({{ scripts|length }})</h3>
-        {% if scripts %}
-        <table class="table">
-            <thead>
-                <tr><th>标题</th><th>平台</th><th>AI生成</th><th>标星</th><th>时间</th></tr>
-            </thead>
+        <h3>📝 拍摄文案 ({{ shooting_scripts|length }})</h3>
+        {% if shooting_scripts %}
+        <table class="table" style="font-size:12px">
+            <thead><tr><th>日期</th><th>IP</th><th>文案内容</th><th>来源</th></tr></thead>
             <tbody>
-            {% for s in scripts %}
+            {% for ss in shooting_scripts %}
             <tr>
-                <td><a href="/scripts/{{ s.id }}">{{ s.title }}</a></td>
-                <td>{{ s.platform }}</td>
-                <td>{{ '🤖' if s.ai_generated else '✍️' }}</td>
-                <td>{{ '⭐' if s.is_starred else '-' }}</td>
-                <td>{{ s.created_at.strftime('%m-%d %H:%M') if s.created_at else '' }}</td>
+                <td>{% if ss.task %}{{ ss.task.scheduled_date }}{% else %}-{% endif %}</td>
+                <td>{% if ss.task and ss.task.ip %}{{ ss.task.ip.name }}{% else %}-{% endif %}</td>
+                <td>{{ ss.content[:100] }}{% if ss.content|length > 100 %}…{% endif %}</td>
+                <td>{{ '🤖 AI' if ss.source == 'ai' else '✏️ 手动' }}</td>
             </tr>
             {% endfor %}
             </tbody>
         </table>
         {% else %}
-        <p>暂无文案，<a href="/scripts/generate?merchant_id={{ merchant.id }}">AI生成第一个</a></p>
+        <p style="color:#999">还没有文案</p>
         {% endif %}
+        <a href="/schedule?tab=scripts&merchant_id={{ merchant.id }}" class="btn btn-sm btn-primary" style="margin-top:8px">📝 去文案页编辑</a>
     </div>
 
     <!-- 视频列表 -->

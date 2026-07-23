@@ -1,7 +1,7 @@
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from database import get_db
 from models import Merchant, DouyinAccount, Script, Video, RedBookAccount, ADQAccount, OceanEngineAccount
 
@@ -232,6 +232,21 @@ def merchant_detail(merchant_id: int, request: Request, db: Session = Depends(ge
             ShootingIP.status == "active"
         ).order_by(ShootingIP.name).all()
 
+    # 查询该商家的拍摄文案（从排班系统）
+    from models import ShootingScript, ShootingTask
+    shooting_scripts = []
+    if shooting_merchant:
+        task_ids = db.query(ShootingTask.id).filter(
+            ShootingTask.merchant_id == shooting_merchant.id
+        ).all()
+        if task_ids:
+            tids = [t[0] for t in task_ids]
+            shooting_scripts = db.query(ShootingScript).options(
+                joinedload(ShootingScript.task).joinedload(ShootingTask.ip)
+            ).filter(ShootingScript.task_id.in_(tids)).order_by(
+                ShootingScript.created_at.desc()
+            ).limit(20).all()
+
     templates = get_templates()
     return templates.TemplateResponse("merchant_detail.html", {
         "request": request,
@@ -243,6 +258,7 @@ def merchant_detail(merchant_id: int, request: Request, db: Session = Depends(ge
         "scripts": scripts,
         "videos": videos,
         "merchant_ips": merchant_ips,
+        "shooting_scripts": shooting_scripts,
         "competitor_url": None,
         "competitor_result": None,
         "competitor_error": None,
