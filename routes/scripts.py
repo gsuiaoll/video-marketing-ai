@@ -19,36 +19,16 @@ def get_templates():
 @router.get("")
 def list_scripts(request: Request, db: Session = Depends(get_db)):
     check_auth(request)
-    raw = request.query_params.get("merchant_id")
-    merchant_id = int(raw) if raw else None
-    query = db.query(Script)
-    if merchant_id:
-        query = query.filter(Script.merchant_id == merchant_id)
-    scripts = query.order_by(Script.created_at.desc()).all()
-
-    from models import Merchant
-    merchants = db.query(Merchant).all()
-
-    templates = get_templates()
-    return templates.TemplateResponse("scripts.html", {
-        "request": request,
-        "scripts": scripts,
-        "merchants": merchants
-    })
+    mid = request.query_params.get("merchant_id", "")
+    if mid:
+        return RedirectResponse(url=f"/schedule?tab=scripts&merchant_id={mid}", status_code=302)
+    return RedirectResponse(url="/schedule?tab=scripts", status_code=302)
 
 
 @router.get("/generate")
 def generate_page(request: Request, db: Session = Depends(get_db)):
     check_auth(request)
-    from models import Merchant
-    merchants = db.query(Merchant).all()
-    templates = get_templates()
-    return templates.TemplateResponse("script_generate.html", {
-        "request": request,
-        "merchants": merchants,
-        "result": None,
-        "error": ""
-    })
+    return RedirectResponse(url="/schedule?tab=scripts", status_code=302)
 
 
 @router.post("/generate")
